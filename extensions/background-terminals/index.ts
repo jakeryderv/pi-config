@@ -1,4 +1,3 @@
-import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import type {
@@ -7,108 +6,20 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
-import { branchContainsLeaf } from "./lib/session-branch.ts";
+import { branchContainsLeaf } from "../shared/session-branch.ts";
+import type { BackgroundTerminal } from "./domain.ts";
+import {
+  combinedOutput,
+  describe,
+  sanitizeOutput,
+  toolReport,
+} from "./output.ts";
+import { startTerminal, stopTerminal } from "./process.ts";
+
+export { appendBounded, sanitizeOutput } from "./output.ts";
 
 const MAX_RUNNING = 8;
-const MAX_OUTPUT_CHARS = 64 * 1024;
-const TOOL_OUTPUT_CHARS = 16 * 1024;
 const WIDGET_KEY = "background-terminals";
-
-type TerminalStatus = "running" | "exited" | "failed" | "killed";
-
-const OSC_PATTERN = /\u001b\][^\u0007]*(?:\u0007|\u001b\\)/g;
-const CSI_PATTERN = /\u001b\[[0-?]*[ -/]*[@-~]/g;
-const CONTROL_PATTERN =
-  /[\u0000-\u0008\u000b\u000c\u000e-\u001a\u001c-\u001f\u007f]/g;
-
-export function sanitizeOutput(value: string) {
-  return value
-    .replace(OSC_PATTERN, "")
-    .replace(CSI_PATTERN, "")
-    .replace(CONTROL_PATTERN, "");
-}
-
-interface BackgroundTerminal {
-  id: string;
-  title: string;
-  command: string;
-  cwd: string;
-  originLeafId: string | null;
-  child: ChildProcess;
-  startedAt: number;
-  endedAt?: number;
-  status: TerminalStatus;
-  exitCode: number | null;
-  signal: NodeJS.Signals | null;
-  stdout: string;
-  stderr: string;
-  announced: boolean;
-  closePromise: Promise<void>;
-  resolveClose: () => void;
-}
-
-export function appendBounded(
-  current: string,
-  chunk: string,
-  limit = MAX_OUTPUT_CHARS,
-) {
-  const combined = current + chunk;
-  if (combined.length <= limit) return combined;
-  const marker = "[earlier output truncated]\n";
-  if (limit <= marker.length) return combined.slice(-limit);
-  return `${marker}${combined.slice(-(limit - marker.length))}`;
-}
-
-function elapsed(terminal: BackgroundTerminal) {
-  const end = terminal.endedAt ?? Date.now();
-  const seconds = Math.max(0, Math.round((end - terminal.startedAt) / 1000));
-  return `${seconds}s`;
-}
-
-function describe(terminal: BackgroundTerminal) {
-  const result =
-    terminal.status === "running"
-      ? `pid ${terminal.child.pid ?? "?"}`
-      : terminal.signal
-        ? `signal ${terminal.signal}`
-        : `exit ${terminal.exitCode ?? "?"}`;
-  return `${terminal.id} [${terminal.status}] ${terminal.title} · ${result} · ${elapsed(terminal)}`;
-}
-
-function combinedOutput(terminal: BackgroundTerminal) {
-  const parts: string[] = [];
-  if (terminal.stdout.trim())
-    parts.push(`STDOUT\n${terminal.stdout.trimEnd()}`);
-  if (terminal.stderr.trim())
-    parts.push(`STDERR\n${terminal.stderr.trimEnd()}`);
-  return parts.join("\n\n") || "(no output)";
-}
-
-function toolReport(terminal: BackgroundTerminal) {
-  const output = combinedOutput(terminal);
-  const visible =
-    output.length > TOOL_OUTPUT_CHARS
-      ? `[output truncated to final ${TOOL_OUTPUT_CHARS} characters]\n${output.slice(-TOOL_OUTPUT_CHARS)}`
-      : output;
-  return `${describe(terminal)}\ncommand: ${sanitizeOutput(terminal.command)}\ncwd: ${sanitizeOutput(terminal.cwd)}\n\n${visible}`;
-}
-
-function signalProcessTree(
-  terminal: BackgroundTerminal,
-  signal: NodeJS.Signals,
-) {
-  const pid = terminal.child.pid;
-  if (!pid) return;
-  try {
-    process.kill(-pid, signal);
-  } catch {
-    try {
-      terminal.child.kill(signal);
-    } catch {
-      // It may have exited between the status check and signal delivery.
-    }
-  }
-}
 
 export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
   const terminals = new Map<string, BackgroundTerminal>();
@@ -181,88 +92,21 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
       );
     }
 
-    let resolveClose = () => {};
-    const closePromise = new Promise<void>((resolvePromise) => {
-      resolveClose = resolvePromise;
-    });
-    const child = spawn(process.env.SHELL ?? "/bin/bash", ["-lc", command], {
-      cwd,
-      detached: process.platform !== "win32",
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const terminal: BackgroundTerminal = {
+    const terminal = startTerminal({
       id: `bg-${nextId++}`,
       title,
       command,
       cwd,
       originLeafId,
-      child,
-      startedAt: Date.now(),
-      status: "running",
-      exitCode: null,
-      signal: null,
-      stdout: "",
-      stderr: "",
-      announced: false,
-      closePromise,
-      resolveClose,
-    };
+      onChange: updateWidget,
+      onSettlement: announceSettlement,
+    });
     terminals.set(terminal.id, terminal);
-
-    child.stdout?.on("data", (chunk: Buffer | string) => {
-      terminal.stdout = appendBounded(
-        terminal.stdout,
-        sanitizeOutput(String(chunk)),
-      );
-    });
-    child.stderr?.on("data", (chunk: Buffer | string) => {
-      terminal.stderr = appendBounded(
-        terminal.stderr,
-        sanitizeOutput(String(chunk)),
-      );
-    });
-    child.on("error", (error) => {
-      terminal.stderr = appendBounded(terminal.stderr, `${error.message}\n`);
-      terminal.status = "failed";
-    });
-    child.on("close", (code, signal) => {
-      terminal.endedAt = Date.now();
-      terminal.exitCode = code;
-      terminal.signal = signal;
-      terminal.status = signal
-        ? "killed"
-        : terminal.status === "failed"
-          ? "failed"
-          : "exited";
-      terminal.resolveClose();
-      updateWidget();
-      announceSettlement(terminal);
-    });
-
     updateWidget();
     return terminal;
   };
 
-  const stop = async (terminal: BackgroundTerminal) => {
-    if (terminal.status !== "running") return;
-    signalProcessTree(terminal, "SIGTERM");
-    const killTimer = setTimeout(() => {
-      if (terminal.status === "running") signalProcessTree(terminal, "SIGKILL");
-    }, 2_000);
-    let deadline: ReturnType<typeof setTimeout> | undefined;
-    try {
-      await Promise.race([
-        terminal.closePromise,
-        new Promise<void>((resolvePromise) => {
-          deadline = setTimeout(resolvePromise, 4_000);
-        }),
-      ]);
-    } finally {
-      clearTimeout(killTimer);
-      if (deadline) clearTimeout(deadline);
-    }
-  };
+  const stop = stopTerminal;
 
   const requireTerminal = (id: string) => {
     const terminal = terminals.get(id);

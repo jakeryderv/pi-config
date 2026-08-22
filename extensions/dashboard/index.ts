@@ -1,76 +1,19 @@
-import { homedir } from "node:os";
-import { relative } from "node:path";
 import type {
   ExtensionAPI,
   ExtensionContext,
   ReadonlyFooterDataProvider,
 } from "@earendil-works/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth } from "@earendil-works/pi-tui";
+import {
+  columns,
+  formatDirectory,
+  formatTokens,
+  sessionCost,
+} from "./format.ts";
+import { EMPTY_GIT, parsePullRequest } from "./git.ts";
 
-interface GitState {
-  branch: string;
-  changedFiles: number;
-  pullRequest: { number: number; url: string } | null;
-}
-
-const EMPTY_GIT: GitState = { branch: "", changedFiles: 0, pullRequest: null };
 const GIT_REFRESH_MS = 5_000;
 const PR_REFRESH_MS = 60_000;
-
-function formatTokens(tokens: number) {
-  if (tokens < 1_000) return String(tokens);
-  if (tokens < 1_000_000)
-    return `${(tokens / 1_000).toFixed(tokens < 10_000 ? 1 : 0)}k`;
-  return `${(tokens / 1_000_000).toFixed(1)}m`;
-}
-
-function formatDirectory(cwd: string) {
-  const home = homedir();
-  if (cwd === home) return "~";
-  return cwd.startsWith(`${home}/`) ? `~/${relative(home, cwd)}` : cwd;
-}
-
-function columns(left: string, right: string, width: number) {
-  if (!right) return truncateToWidth(left, width);
-  const gap = width - visibleWidth(left) - visibleWidth(right);
-  if (gap > 0) return `${left}${" ".repeat(gap)}${right}`;
-
-  const leftWidth = Math.max(1, Math.floor(width * 0.48));
-  const rightWidth = Math.max(1, width - leftWidth - 1);
-  const fittedLeft = truncateToWidth(left, leftWidth);
-  const fittedRight = truncateToWidth(right, rightWidth);
-  return `${fittedLeft} ${fittedRight}`;
-}
-
-function sessionCost(ctx: ExtensionContext) {
-  let cost = 0;
-  for (const entry of ctx.sessionManager.getBranch()) {
-    if (entry.type === "message" && entry.message.role === "assistant") {
-      cost += entry.message.usage.cost.total;
-    }
-  }
-  return cost;
-}
-
-function parsePullRequest(value: string) {
-  try {
-    const parsed = JSON.parse(value) as {
-      number?: unknown;
-      url?: unknown;
-      state?: unknown;
-    };
-    if (
-      parsed.state === "OPEN" &&
-      typeof parsed.number === "number" &&
-      typeof parsed.url === "string"
-    ) {
-      return { number: parsed.number, url: parsed.url };
-    }
-  } catch {
-    // gh can fail or produce non-JSON output when there is no pull request.
-  }
-  return null;
-}
 
 export default function dashboardExtension(pi: ExtensionAPI) {
   let gitState = EMPTY_GIT;

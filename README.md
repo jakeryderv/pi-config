@@ -48,12 +48,12 @@ prompts for provider login) → add optional external dependencies as needed
 
 | Extension | Behavior |
 | --- | --- |
-| `dashboard.ts` | Two-line footer with cwd, provider/model/reasoning, context use, session cost, token speed, Git branch/change count, PR number, and other extension statuses. `/pr` forces a refresh. |
-| `background-terminals.ts` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; `/ps` provides an interactive inspector. Processes are stopped on session shutdown. |
-| `ask-user.ts` | `ask_user` tool for one focused 2–5 choice question, including a free-form answer path. |
-| `run-recaps.ts` | Adds a TUI-only recap card after each settled run. It stays on the active provider (using `gpt-5.6-luna` only for `openai-codex`) and falls back to a local extract. The request includes user/assistant text but deliberately omits tool arguments and raw tool results. `/recaps` toggles it for the session; each generated recap is an additional model request. |
-| `copy-all.ts` | `/copy-all` copies user and assistant text from the active conversation branch. |
-| `dump-system-prompt.ts` | `/dump-system-prompt` displays the current effective system prompt. |
+| `dashboard/` | Two-line footer with cwd, provider/model/reasoning, context use, session cost, token speed, Git branch/change count, PR number, and other extension statuses. `/pr` forces a refresh. |
+| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; `/ps` provides an interactive inspector. Processes are stopped on session shutdown. |
+| `ask-user/` | `ask_user` tool for one focused 2–5 choice question, including a free-form answer path. |
+| `run-recaps/` | Adds a TUI-only recap card after each settled run. It stays on the active provider (using `gpt-5.6-luna` only for `openai-codex`) and falls back to a local extract. The request includes user/assistant text but deliberately omits tool arguments and raw tool results. `/recaps` toggles it for the session; each generated recap is an additional model request. |
+| `copy-all/` | `/copy-all` copies user and assistant text from the active conversation branch. |
+| `dump-system-prompt/` | `/dump-system-prompt` displays the current effective system prompt. |
 
 Extension runtime imports are supplied by Pi; `extensions/package-lock.json`
 exists only to make local type-checking and tests reproducible.
