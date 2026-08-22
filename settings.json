@@ -19,7 +19,9 @@
     "npm:@quintinshaw/pi-dynamic-workflows"
   ],
   "defaultProjectTrust": "ask",
-  "skills": ["!**/.agents/**"],
+  "skills": [
+    "!**/.agents/**"
+  ],
   "enableInstallTelemetry": false,
   "enabledModels": [
     "openai-codex/gpt-5.6-sol:high",
