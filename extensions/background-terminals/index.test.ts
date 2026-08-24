@@ -29,6 +29,9 @@ test("background terminal tools start a process and capture its output", async (
   }
   interface TestTool {
     name: string;
+    renderCall?: unknown;
+    renderResult?: unknown;
+    renderShell?: unknown;
     execute: (...args: unknown[]) => Promise<TestToolResult>;
   }
 
@@ -55,6 +58,11 @@ test("background terminal tools start a process and capture its output", async (
   const start = tools.get("bg_start");
   const status = tools.get("bg_status");
   assert.ok(start && status);
+  for (const tool of tools.values()) {
+    assert.equal(tool.renderCall, undefined);
+    assert.equal(tool.renderResult, undefined);
+    assert.equal(tool.renderShell, undefined);
+  }
   let leafId = "leaf-1";
   let branchIds: string[] = [];
   const context = {

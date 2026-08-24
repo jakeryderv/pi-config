@@ -54,27 +54,22 @@ prompts for provider login) → add optional external dependencies as needed
 | --- | --- |
 | `dashboard/` | Responsive two-line footer with context pressure, accumulated session tokens and cost, model/thinking state, and Git/PR details; secondary session, provider, Git, and PR details progressively disappear at narrower widths. Installed-package statuses are excluded from the footer and presented as compact health rows in a non-capturing, fixed-width top-right overlay toggled by `/status-panel`. Git refreshes are watched/debounced with a 30s fallback; `/pr` forces an immediate refresh. |
 | `autocomplete-above/` | Renders the prompt as a rounded accent-blue surface and joins slash-command or `@` file autocomplete to it above a shared divider, keeping the prompt anchored in fullscreen mode. |
-| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; transcript rows use the shared muted two-line tool summary. `/ps` keeps its dedicated rounded terminal inspector. |
-| `tool-inspector/` | Re-renders Pi's built-in tools as fixed two-line muted summaries with semantic status symbols and no transcript output. `/tools` opens a current-branch selector, then a scrollable overlay containing the complete arguments, output, details, usage, status, and timing. Runtime tool data and model context remain unchanged; Pi's normal expand key remains available for package-owned renderers. |
+| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; tool calls and results use Pi's native fallback rendering. `/ps` keeps its dedicated rounded terminal inspector. |
 | `stream-ui/` | Shows a restrained Carbonfox pulse and `Working` label while partial assistant prose stays hidden; each finalized assistant message then appears atomically through Pi's Markdown renderer with response-only H1–H6 colors (pink, magenta, blue, cyan, teal, muted). H3–H6 flatten to display-only H2 markers so Pi does not print their hashes; original stored Markdown remains unchanged. User Markdown and the global `mdHeading` theme remain unchanged. Finalized assistant fences normalize common language aliases (`ts`, `js`, `py`, `sh`, and related forms), while `markdown.codeBlockIndent` adds a thin `│` rail without changing stored code. Hidden thinking uses `Reasoning…`. When the response fully settles, a persistent TUI-only summary such as `✓ Responded in 12.4s · 1.2k tokens · 84 tok/s` records elapsed time, assistant output tokens for that response, and generation throughput. |
 | `copy-all/` | `/copy-all` copies user and assistant text from the active conversation branch. |
 | `dump-system-prompt/` | `/dump-system-prompt` displays the current effective system prompt. |
 
 Shared rounded-surface framing, terminal-native base backgrounds, selected-row
 fills, and extension-owned dialog behavior live in `extensions/shared/ui.ts`.
-Reusable fixed-height tool-call/result rendering lives in
-`extensions/shared/tool-render.ts`; full tool payloads stay available through the
-Tool Inspector instead of expanding inline. Using the terminal background for
-framed surfaces avoids seams around box-drawing cells; Carbonfox keeps tool text
-and shells uniformly muted while reserving success/error colors for status
-symbols. Extension
+Built-in tools and the background-terminal tools use Pi's native tool rendering,
+including normal inline expansion and raw fallback output. Using the terminal
+background for framed surfaces avoids seams around box-drawing cells. Extension
 runtime imports are supplied by Pi;
 `extensions/package-lock.json` exists only to make local type-checking and tests
 reproducible.
 
-Third-party tools use their package-owned renderers because current Pi does not
-provide a global render-only decorator. The tracked preferences choose the
-closest supported compact modes without replacing package execution:
+Third-party tools use their package-owned renderers. The tracked preferences
+choose supported compact modes without replacing package execution:
 
 - MCP uses compact self-rendered results with one collapsed result line.
 - Pi Lens collapses call and result rows into one summary line.
@@ -119,18 +114,18 @@ Several global extension surfaces intentionally have one owner:
 - `dashboard/` owns the footer.
 - `autocomplete-above/` owns the editor component.
 - `stream-ui/` owns the working indicator and assistant Markdown transformation.
-- `tool-inspector/` re-registers Pi's built-in tools to own their transcript rendering.
 
-Do not add another footer, editor, working-indicator, Markdown-transformer, or
-built-in-tool owner without explicitly composing it with or replacing the
-current owner. After upgrading Pi or installed packages:
+Do not add another footer, editor, working-indicator, or Markdown-transformer
+without explicitly composing it with or replacing the current owner. After
+upgrading Pi or installed packages:
 
 1. Run `just doctor`. If it reports drift, update the three
    `@earendil-works/pi-*` development dependencies and refresh
    `extensions/package-lock.json` and `extensions/node_modules/`.
 2. Run `just check`.
 3. In a TUI session, verify the dashboard footer, prompt/autocomplete placement,
-   streaming/final Markdown transition, compact built-in tool rows, and `/tools`.
+   streaming/final Markdown transition, and native built-in/background-terminal
+   tool expansion.
 
 **Package versions intentionally track latest.** The `packages` array in
 `settings.json` lists bare specs (`npm:pi-lens`, no `@version`), so pi installs

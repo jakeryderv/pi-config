@@ -7,10 +7,6 @@ import type {
 import { Key, matchesKey, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { branchContainsLeaf } from "../shared/session-branch.ts";
-import {
-  renderStandardToolCall,
-  renderStandardToolResult,
-} from "../shared/tool-render.ts";
 import { frameSurface, selectSurface } from "../shared/ui.ts";
 import type { BackgroundTerminal } from "./domain.ts";
 import {
@@ -25,44 +21,6 @@ export { appendBounded, sanitizeOutput } from "./output.ts";
 
 const MAX_RUNNING = 8;
 const WIDGET_KEY = "background-terminals";
-
-type StandardCallOptions = Parameters<typeof renderStandardToolCall>[0];
-type StandardResultOptions = Parameters<typeof renderStandardToolResult>[0];
-
-function renderTerminalCall(
-  options: Omit<StandardCallOptions, "detail"> & { id: string },
-) {
-  return renderStandardToolCall({ ...options, detail: options.id });
-}
-
-function renderTerminalResult(
-  options: Omit<StandardResultOptions, "collapsedLines">,
-) {
-  return renderStandardToolResult({ ...options, collapsedLines: 3 });
-}
-
-function terminalIdRenderers(label: string) {
-  return {
-    renderCall(
-      args: { id: string },
-      theme: StandardCallOptions["theme"],
-      context: StandardCallOptions["context"],
-    ) {
-      return renderTerminalCall({ label, id: args.id, theme, context });
-    },
-    renderResult(
-      ...args: [
-        StandardResultOptions["result"],
-        StandardResultOptions["renderOptions"],
-        StandardResultOptions["theme"],
-        StandardResultOptions["context"],
-      ]
-    ) {
-      const [result, renderOptions, theme, context] = args;
-      return renderTerminalResult({ result, renderOptions, theme, context });
-    },
-  };
-}
 
 export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
   const terminals = new Map<string, BackgroundTerminal>();
@@ -202,23 +160,6 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
         }),
       ),
     }),
-    renderShell: "self",
-    renderCall(args, theme, context) {
-      return renderStandardToolCall({
-        label: "Start terminal",
-        detail: args.title || args.command,
-        theme,
-        context,
-      });
-    },
-    renderResult(result, options, theme, context) {
-      return renderStandardToolResult({
-        result,
-        renderOptions: options,
-        theme,
-        context,
-      });
-    },
     async execute(_id, params, _signal, _update, ctx) {
       const command = params.command.trim();
       if (!command) throw new Error("command must not be empty");
@@ -255,8 +196,6 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       id: Type.String({ description: "Terminal id from bg_start" }),
     }),
-    renderShell: "self",
-    ...terminalIdRenderers("Terminal status"),
     async execute(_id, params) {
       const terminal = requireTerminal(params.id);
       if (terminal.status !== "running") terminal.announced = true;
@@ -269,22 +208,6 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
     label: "List Background Terminals",
     description: "List all managed background terminals in this session.",
     parameters: Type.Object({}),
-    renderShell: "self",
-    renderCall(_args, theme, context) {
-      return renderStandardToolCall({
-        label: "List terminals",
-        theme,
-        context,
-      });
-    },
-    renderResult(result, options, theme, context) {
-      return renderTerminalResult({
-        result,
-        renderOptions: options,
-        theme,
-        context,
-      });
-    },
     async execute() {
       const list = [...terminals.values()];
       return {
@@ -309,8 +232,6 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       id: Type.String({ description: "Terminal id from bg_start" }),
     }),
-    renderShell: "self",
-    ...terminalIdRenderers("Stop terminal"),
     async execute(_id, params) {
       const terminal = requireTerminal(params.id);
       terminal.announced = true;
