@@ -1,7 +1,9 @@
 {
   "settings": {
     "toolPrefix": "server",
-    "idleTimeout": 10
+    "idleTimeout": 10,
+    "toolResultRendering": "compact",
+    "collapsedResultLines": 1
   },
   "mcpServers": {
     "context7": {

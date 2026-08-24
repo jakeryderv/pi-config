@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "0.84.3",
   "theme": "carbonfox",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
@@ -19,7 +19,8 @@
     "npm:pi-intercom",
     "npm:@ff-labs/pi-fff",
     "npm:pi-hermes-memory",
-    "npm:@quintinshaw/pi-dynamic-workflows"
+    "npm:@quintinshaw/pi-dynamic-workflows",
+    "npm:@plannotator/pi-extension"
   ],
   "defaultProjectTrust": "ask",
   "enableInstallTelemetry": false,
