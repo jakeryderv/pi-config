@@ -7,6 +7,11 @@ import type {
 import { Key, matchesKey, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { branchContainsLeaf } from "../shared/session-branch.ts";
+import {
+  renderStandardToolCall,
+  renderStandardToolResult,
+} from "../shared/tool-render.ts";
+import { frameSurface, selectSurface } from "../shared/ui.ts";
 import type { BackgroundTerminal } from "./domain.ts";
 import {
   combinedOutput,
@@ -20,6 +25,44 @@ export { appendBounded, sanitizeOutput } from "./output.ts";
 
 const MAX_RUNNING = 8;
 const WIDGET_KEY = "background-terminals";
+
+type StandardCallOptions = Parameters<typeof renderStandardToolCall>[0];
+type StandardResultOptions = Parameters<typeof renderStandardToolResult>[0];
+
+function renderTerminalCall(
+  options: Omit<StandardCallOptions, "detail"> & { id: string },
+) {
+  return renderStandardToolCall({ ...options, detail: options.id });
+}
+
+function renderTerminalResult(
+  options: Omit<StandardResultOptions, "collapsedLines">,
+) {
+  return renderStandardToolResult({ ...options, collapsedLines: 3 });
+}
+
+function terminalIdRenderers(label: string) {
+  return {
+    renderCall(
+      args: { id: string },
+      theme: StandardCallOptions["theme"],
+      context: StandardCallOptions["context"],
+    ) {
+      return renderTerminalCall({ label, id: args.id, theme, context });
+    },
+    renderResult(
+      ...args: [
+        StandardResultOptions["result"],
+        StandardResultOptions["renderOptions"],
+        StandardResultOptions["theme"],
+        StandardResultOptions["context"],
+      ]
+    ) {
+      const [result, renderOptions, theme, context] = args;
+      return renderTerminalResult({ result, renderOptions, theme, context });
+    },
+  };
+}
 
 export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
   const terminals = new Map<string, BackgroundTerminal>();
@@ -42,7 +85,7 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
       WIDGET_KEY,
       (_tui, theme) =>
         new Text(
-          `${theme.fg("warning", "■")} ${count} background terminal${count === 1 ? "" : "s"} running ${theme.fg("dim", "·")} ${theme.fg("accent", "/ps")}`,
+          `${theme.fg("accent", "●")} ${count} background terminal${count === 1 ? "" : "s"} running ${theme.fg("dim", "·")} ${theme.fg("accent", "/ps")}`,
           0,
           0,
         ),
@@ -76,16 +119,19 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
         { deliverAs: "followUp", triggerTurn: true },
       );
     } catch (error) {
-      console.error("background-terminals: could not deliver result", error);
+      sessionContext?.ui.notify(
+        `Could not deliver background-terminal result: ${error instanceof Error ? error.message : String(error)}`,
+        "warning",
+      );
     }
   };
 
-  const start = (
-    command: string,
-    title: string,
-    cwd: string,
-    originLeafId: string | null,
-  ) => {
+  const start = (options: {
+    command: string;
+    title: string;
+    cwd: string;
+    originLeafId: string | null;
+  }) => {
     if (running().length >= MAX_RUNNING) {
       throw new Error(
         `At most ${MAX_RUNNING} background terminals may run at once.`,
@@ -94,10 +140,10 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
 
     const terminal = startTerminal({
       id: `bg-${nextId++}`,
-      title,
-      command,
-      cwd,
-      originLeafId,
+      title: options.title,
+      command: options.command,
+      cwd: options.cwd,
+      originLeafId: options.originLeafId,
       onChange: updateWidget,
       onSettlement: announceSettlement,
     });
@@ -156,6 +202,23 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
         }),
       ),
     }),
+    renderShell: "self",
+    renderCall(args, theme, context) {
+      return renderStandardToolCall({
+        label: "Start terminal",
+        detail: args.title || args.command,
+        theme,
+        context,
+      });
+    },
+    renderResult(result, options, theme, context) {
+      return renderStandardToolResult({
+        result,
+        renderOptions: options,
+        theme,
+        context,
+      });
+    },
     async execute(_id, params, _signal, _update, ctx) {
       const command = params.command.trim();
       if (!command) throw new Error("command must not be empty");
@@ -166,12 +229,12 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
       const title =
         sanitizeOutput(params.title).replace(/\s+/g, " ").trim().slice(0, 80) ||
         "terminal";
-      const terminal = start(
+      const terminal = start({
         command,
         title,
         cwd,
-        ctx.sessionManager.getLeafId(),
-      );
+        originLeafId: ctx.sessionManager.getLeafId(),
+      });
       return {
         content: [
           {
@@ -192,6 +255,8 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       id: Type.String({ description: "Terminal id from bg_start" }),
     }),
+    renderShell: "self",
+    ...terminalIdRenderers("Terminal status"),
     async execute(_id, params) {
       const terminal = requireTerminal(params.id);
       if (terminal.status !== "running") terminal.announced = true;
@@ -204,6 +269,22 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
     label: "List Background Terminals",
     description: "List all managed background terminals in this session.",
     parameters: Type.Object({}),
+    renderShell: "self",
+    renderCall(_args, theme, context) {
+      return renderStandardToolCall({
+        label: "List terminals",
+        theme,
+        context,
+      });
+    },
+    renderResult(result, options, theme, context) {
+      return renderTerminalResult({
+        result,
+        renderOptions: options,
+        theme,
+        context,
+      });
+    },
     async execute() {
       const list = [...terminals.values()];
       return {
@@ -228,6 +309,8 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       id: Type.String({ description: "Terminal id from bg_start" }),
     }),
+    renderShell: "self",
+    ...terminalIdRenderers("Stop terminal"),
     async execute(_id, params) {
       const terminal = requireTerminal(params.id);
       terminal.announced = true;
@@ -245,18 +328,28 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
         return;
       }
       const labels = list.map(describe);
-      const selected = await ctx.ui.select("Background terminals", labels);
+      const selected = await selectSurface(
+        ctx.ui,
+        "Background terminals",
+        labels,
+      );
       if (!selected) return;
       const terminal = list[labels.indexOf(selected)];
       if (!terminal) return;
       await ctx.ui.custom((_tui, theme, _keybindings, done) => {
         const view = new Text(
-          `${theme.fg("accent", theme.bold(describe(terminal)))}\n${theme.fg("dim", `${sanitizeOutput(terminal.cwd)}\n${sanitizeOutput(terminal.command)}`)}\n\n${combinedOutput(terminal)}\n\n${theme.fg("dim", "Enter or Esc to close")}`,
-          1,
+          `${theme.fg("dim", `${sanitizeOutput(terminal.cwd)}\n${sanitizeOutput(terminal.command)}`)}\n\n${combinedOutput(terminal)}`,
+          0,
           0,
         );
         return {
-          render: (width: number) => view.render(width),
+          render: (width: number) =>
+            frameSurface(view.render(Math.max(1, width - 4)), width, {
+              border: (text) => theme.fg("border", text),
+              title: theme.bold(theme.fg("accent", describe(terminal))),
+              footer: theme.fg("dim", "Enter or Esc to close"),
+              paddingX: 1,
+            }),
           invalidate: () => view.invalidate(),
           handleInput: (data: string) => {
             if (matchesKey(data, Key.enter) || matchesKey(data, Key.escape))

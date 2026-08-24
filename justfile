@@ -7,7 +7,7 @@ agent_dir := env_var('HOME') / ".pi/agent"
 
 # Symlinked into ~/.pi/agent/. Directories are linked whole, so files added to
 # them later appear live without re-running `just apply`.
-entries := "AGENTS.md settings.json mcp.json extensions skills prompts themes"
+entries := "AGENTS.md settings.json keybindings.json mcp.json extensions skills prompts themes"
 
 default: status
 

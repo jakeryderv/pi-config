@@ -8,6 +8,9 @@
   "terminal": {
     "showTerminalProgress": true
   },
+  "markdown": {
+    "codeBlockIndent": "│ "
+  },
   "packages": [
     "npm:pi-web-access",
     "npm:pi-mcp-adapter",
@@ -30,7 +33,11 @@
     "google/gemini-3.7-flash:high",
     "google/gemini-3.1-pro-preview:high"
   ],
-  "hideThinkingBlock": true,
+  "hideThinkingBlock": false,
+  "editorPaddingX": 1,
+  "outputPad": 1,
+  "autocompleteMaxVisible": 6,
   "tuiMode": "fullscreen",
-  "fullscreenScrollbar": "always"
+  "fullscreenScrollbar": "auto",
+  "fullscreenExitOutput": "resume-hint"
 }

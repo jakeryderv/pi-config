@@ -1,6 +1,10 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
 import { Type, type Static } from "typebox";
+import {
+  renderStandardToolCall,
+  renderStandardToolResult,
+} from "../shared/tool-render.ts";
+import { inputSurface, selectSurface } from "../shared/ui.ts";
 
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 5;
@@ -52,6 +56,7 @@ export default function askUserExtension(pi: ExtensionAPI) {
     ],
     parameters: AskUserParams,
     executionMode: "sequential",
+    renderShell: "self",
 
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const labels = params.options.map((option) => option.label);
@@ -102,13 +107,13 @@ export default function askUserExtension(pi: ExtensionAPI) {
       if (signal?.aborted) return result("The question was cancelled.", null);
 
       const choices = [...displayOptions, CUSTOM_ANSWER];
-      const selected = await ctx.ui.select(params.question, choices, {
+      const selected = await selectSurface(ctx.ui, params.question, choices, {
         signal,
       });
       if (!selected) return result("The user dismissed the question.", null);
 
       if (selected === CUSTOM_ANSWER) {
-        const custom = await ctx.ui.editor("Your answer", "");
+        const custom = await inputSurface(ctx.ui, "Your answer");
         const answer = custom?.trim();
         if (!answer) return result("The user dismissed the question.", null);
         return result(`User wrote: ${answer}`, answer, true);
@@ -119,27 +124,29 @@ export default function askUserExtension(pi: ExtensionAPI) {
       return result(`User selected ${selectedIndex + 1}: ${answer}`, answer);
     },
 
-    renderCall(args, theme) {
-      const question =
-        typeof args.question === "string" ? args.question : "Question";
-      return new Text(
-        `${theme.fg("toolTitle", theme.bold("ask_user "))}${theme.fg("muted", question)}`,
-        0,
-        0,
-      );
+    renderCall(args, theme, context) {
+      return renderStandardToolCall({
+        label: "Ask user",
+        detail: args.question,
+        theme,
+        context,
+      });
     },
 
-    renderResult(result, _options, theme) {
+    renderResult(result, options, theme, context) {
       const details = result.details as AskUserDetails | undefined;
-      if (!details || details.answer === null) {
-        return new Text(theme.fg("warning", "✗ dismissed"), 0, 0);
+      let summary = "Dismissed";
+      if (details?.answer) {
+        const action = details.wasCustom ? "Wrote" : "Selected";
+        summary = `${action} · ${details.answer}`;
       }
-      const prefix = details.wasCustom ? "✓ wrote: " : "✓ selected: ";
-      return new Text(
-        theme.fg("success", prefix) + theme.fg("accent", details.answer),
-        0,
-        0,
-      );
+      return renderStandardToolResult({
+        result,
+        renderOptions: options,
+        theme,
+        context,
+        summary,
+      });
     },
   });
 }

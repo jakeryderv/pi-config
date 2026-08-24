@@ -14,6 +14,7 @@ local files beside the links.
 | --- | --- |
 | `AGENTS.md` — global agent instructions | `auth.json` — credentials |
 | `settings.json` — provider/model defaults, scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
+| `keybindings.json` — frees `Ctrl+O` from the built-in expand-all action for the Tool Inspector | — |
 | `mcp.json` — MCP servers (`context7` hosted remote) | `sessions/`, `mcp-cache.json`, `models-store.json`, `run-history.jsonl`, `intercom/`, `trust.json` — runtime state |
 | `extensions/` — custom TS extensions and their development lockfile | `fff/`, `pi-hermes-memory/`, `projects-memory/`, `missions/`, `tmp/` — extension state |
 | `themes/` — custom TUI theme (`carbonfox.json`; selected in `settings.json`) | `~/.pi/artifacts/`, `workflows/`, `web-search-cache/`, `rules/` — generated state |
@@ -48,15 +49,26 @@ prompts for provider login) → add optional external dependencies as needed
 
 | Extension | Behavior |
 | --- | --- |
-| `dashboard/` | Two-line footer with cwd, provider/model/reasoning, context use, session cost, token speed, Git branch/change count, PR number, and other extension statuses. `/pr` forces a refresh. |
-| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; `/ps` provides an interactive inspector. Processes are stopped on session shutdown. |
-| `ask-user/` | `ask_user` tool for one focused 2–5 choice question, including a free-form answer path. |
-| `run-recaps/` | Adds a TUI-only recap card after each settled run. It stays on the active provider (using `gpt-5.6-luna` only for `openai-codex`) and falls back to a local extract. The request includes user/assistant text but deliberately omits tool arguments and raw tool results. `/recaps` toggles it for the session; each generated recap is an additional model request. |
+| `dashboard/` | Responsive two-line footer that progressively removes secondary session, provider, speed, Git, and PR details at narrower widths. Installed-package statuses are excluded from the footer and presented as compact health rows in a non-capturing, fixed-width top-right overlay toggled by `/status-panel`. Git refreshes are watched/debounced with a 30s fallback; `/pr` forces an immediate refresh. |
+| `autocomplete-above/` | Renders the prompt as a rounded accent-blue surface and joins slash-command or `@` file autocomplete to it above a shared divider, keeping the prompt anchored in fullscreen mode. |
+| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; transcript rows use the shared muted two-line tool summary. `/ps` keeps its dedicated rounded terminal inspector. |
+| `ask-user/` | `ask_user` tool for one focused 2–5 choice question, using the shared compact transcript summary plus rounded selector and free-form answer overlays. |
+| `tool-inspector/` | Re-renders Pi's built-in tools as fixed two-line muted summaries with semantic status symbols and no transcript output. `Ctrl+O` or `/tools` opens a current-branch selector, then a scrollable overlay containing the complete arguments, output, details, usage, status, and timing. Runtime tool data and model context remain unchanged. |
+| `stream-ui/` | Shows a restrained Carbonfox pulse and `Working` label while partial assistant prose stays hidden; each finalized assistant message then appears atomically through Pi's Markdown renderer with response-only H1–H6 colors (pink, magenta, blue, cyan, teal, muted). H3–H6 flatten to display-only H2 markers so Pi does not print their hashes; original stored Markdown remains unchanged. User Markdown and the global `mdHeading` theme remain unchanged. Finalized assistant fences normalize common language aliases (`ts`, `js`, `py`, `sh`, and related forms), while `markdown.codeBlockIndent` adds a thin `│` rail without changing stored code. Hidden thinking uses `Reasoning…`. When the response fully settles, a persistent TUI-only summary such as `✓ Responded in 12.4s · 8.2k tokens` records total time and usage. |
 | `copy-all/` | `/copy-all` copies user and assistant text from the active conversation branch. |
 | `dump-system-prompt/` | `/dump-system-prompt` displays the current effective system prompt. |
 
-Extension runtime imports are supplied by Pi; `extensions/package-lock.json`
-exists only to make local type-checking and tests reproducible.
+Shared rounded-surface framing, terminal-native base backgrounds, selected-row
+fills, and extension-owned dialog behavior live in `extensions/shared/ui.ts`.
+Reusable fixed-height tool-call/result rendering lives in
+`extensions/shared/tool-render.ts`; full tool payloads stay available through the
+Tool Inspector instead of expanding inline. Using the terminal background for
+framed surfaces avoids seams around box-drawing cells; Carbonfox keeps tool text
+and shells uniformly muted while reserving success/error colors for status
+symbols. Extension
+runtime imports are supplied by Pi;
+`extensions/package-lock.json` exists only to make local type-checking and tests
+reproducible.
 
 Development:
 

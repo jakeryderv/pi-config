@@ -3,12 +3,7 @@ import { relative } from "node:path";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
-export function formatTokens(tokens: number) {
-  if (tokens < 1_000) return String(tokens);
-  if (tokens < 1_000_000)
-    return `${(tokens / 1_000).toFixed(tokens < 10_000 ? 1 : 0)}k`;
-  return `${(tokens / 1_000_000).toFixed(1)}m`;
-}
+export { formatTokens } from "../shared/format.ts";
 
 export function formatDirectory(cwd: string) {
   const home = homedir();
@@ -30,10 +25,30 @@ export function columns(left: string, right: string, width: number) {
 
 export function sessionCost(ctx: ExtensionContext) {
   let cost = 0;
-  for (const entry of ctx.sessionManager.getBranch()) {
+  for (const entry of ctx.sessionManager.getEntries()) {
     if (entry.type === "message" && entry.message.role === "assistant") {
       cost += entry.message.usage.cost.total;
+    } else if (
+      entry.type === "message" &&
+      entry.message.role === "toolResult" &&
+      entry.message.usage
+    ) {
+      cost += entry.message.usage.cost.total;
+    } else if (
+      (entry.type === "branch_summary" || entry.type === "compaction") &&
+      entry.usage
+    ) {
+      cost += entry.usage.cost.total;
     }
   }
   return cost;
+}
+
+export function smoothRate(
+  previous: number | null,
+  sample: number,
+  alpha = 0.35,
+) {
+  if (previous === null) return sample;
+  return previous * (1 - alpha) + sample * alpha;
 }
