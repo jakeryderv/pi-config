@@ -12,7 +12,7 @@ local files beside the links.
 
 | Tracked | Tool-managed / secret (stays in `~/.pi/`, NOT tracked) |
 | --- | --- |
-| `AGENTS.md` — global agent instructions | `auth.json` — credentials |
+| `AGENTS.md` — global agent instructions; `AGENTS.override.md` — project-only additions that prevent this repo from loading the global instructions twice | `auth.json` — credentials |
 | `settings.json` — provider/model defaults, scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
 | `keybindings.json` — user keybinding overrides (currently none) | — |
 | `mcp.json` — MCP servers (`context7` hosted remote) and compact MCP result rendering | `sessions/`, `mcp-cache.json`, `models-store.json`, `run-history.jsonl`, `intercom/`, `trust.json` — runtime state |
@@ -32,6 +32,7 @@ local files beside the links.
 ```bash
 just apply    # symlink tracked config into Pi's live config paths
 just status   # show what is linked / missing / shadowed
+just doctor   # status + Pi runtime/development dependency compatibility
 just unlink   # remove the symlinks (only ones pointing into this repo)
 ```
 
@@ -110,6 +111,26 @@ Self-contained (no extra setup): `pi-subagents`, `pi-intercom`, `pi-web-access`
 fetch, pi-lens's bundled ast-grep, and the tracked custom extensions.
 
 ## Maintenance
+
+### Extension ownership and Pi upgrades
+
+Several global extension surfaces intentionally have one owner:
+
+- `dashboard/` owns the footer.
+- `autocomplete-above/` owns the editor component.
+- `stream-ui/` owns the working indicator and assistant Markdown transformation.
+- `tool-inspector/` re-registers Pi's built-in tools to own their transcript rendering.
+
+Do not add another footer, editor, working-indicator, Markdown-transformer, or
+built-in-tool owner without explicitly composing it with or replacing the
+current owner. After upgrading Pi or installed packages:
+
+1. Run `just doctor`. If it reports drift, update the three
+   `@earendil-works/pi-*` development dependencies and refresh
+   `extensions/package-lock.json` and `extensions/node_modules/`.
+2. Run `just check`.
+3. In a TUI session, verify the dashboard footer, prompt/autocomplete placement,
+   streaming/final Markdown transition, compact built-in tool rows, and `/tools`.
 
 **Package versions intentionally track latest.** The `packages` array in
 `settings.json` lists bare specs (`npm:pi-lens`, no `@version`), so pi installs

@@ -73,6 +73,30 @@ status:
         echo "absent  pi-lens.json (expected at {{ lens_target }})"
     fi
 
+# Check links and verify that local extension dependencies match the Pi runtime
+doctor:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just --justfile "{{ repo }}/justfile" status
+    runtime_version="$(pi --version)"
+    mismatch=0
+    for package in pi-ai pi-coding-agent pi-tui; do
+        package_json="{{ repo }}/extensions/node_modules/@earendil-works/$package/package.json"
+        if [ ! -f "$package_json" ]; then
+            echo "missing @earendil-works/$package (run npm --prefix extensions ci --ignore-scripts)" >&2
+            mismatch=1
+            continue
+        fi
+        dev_version="$(node -e 'console.log(require(process.argv[1]).version)' "$package_json")"
+        if [ "$dev_version" = "$runtime_version" ]; then
+            echo "ok      @earendil-works/$package $dev_version"
+        else
+            echo "drift   @earendil-works/$package $dev_version (Pi runtime $runtime_version)" >&2
+            mismatch=1
+        fi
+    done
+    exit "$mismatch"
+
 # Type-check and test the extensions
 check:
     npm --prefix {{ repo }}/extensions run check
