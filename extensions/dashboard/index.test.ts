@@ -12,7 +12,7 @@ import {
   formatDirectory,
   formatTokens,
   sessionCost,
-  smoothRate,
+  sessionTokens,
 } from "./format.ts";
 import {
   GIT_MUTATING_TOOLS,
@@ -84,30 +84,38 @@ test("status panel renders package statuses in a bordered panel", () => {
   assert.match(rendered, /\/status-panel/);
 });
 
-test("dashboard includes nested and summary model costs", () => {
+test("dashboard includes nested and summary model usage", () => {
   const entries = [
     {
       type: "message",
-      message: { role: "assistant", usage: { cost: { total: 1 } } },
+      message: {
+        role: "assistant",
+        usage: { cost: { total: 1 }, totalTokens: 100 },
+      },
     },
     {
       type: "message",
-      message: { role: "toolResult", usage: { cost: { total: 0.5 } } },
+      message: {
+        role: "toolResult",
+        usage: { cost: { total: 0.5 }, totalTokens: 50 },
+      },
     },
-    { type: "compaction", usage: { cost: { total: 0.25 } } },
-    { type: "branch_summary", usage: { cost: { total: 0.125 } } },
+    {
+      type: "compaction",
+      usage: { cost: { total: 0.25 }, totalTokens: 25 },
+    },
+    {
+      type: "branch_summary",
+      usage: { cost: { total: 0.125 }, totalTokens: 10 },
+    },
   ];
-  // SAFETY: sessionCost reads only sessionManager.getEntries() and usage costs.
+  // SAFETY: usage helpers read only sessionManager.getEntries() and usage totals.
   const ctx = {
     sessionManager: { getEntries: () => entries },
   } as unknown as ExtensionContext;
 
   assert.equal(sessionCost(ctx), 1.875);
-});
-
-test("dashboard smooths recent token speed", () => {
-  assert.equal(smoothRate(null, 100), 100);
-  assert.equal(smoothRate(100, 200, 0.25), 125);
+  assert.equal(sessionTokens(ctx), 185);
 });
 
 test("dashboard selects responsive footer density", () => {
@@ -142,7 +150,7 @@ test("dashboard footer removes secondary details at narrow widths", () => {
       pullRequest: { number: 42, url: "https://example.test/42" },
     },
     cachedCost: 0.125,
-    tokensPerSecond: 50,
+    cachedTokens: 1_500,
     thinkingLevel: "high" as const,
   };
 
@@ -150,7 +158,9 @@ test("dashboard footer removes secondary details at narrow widths", () => {
   const narrow = renderDashboardFooter({ ...state, width: 60 }).join("\n");
   assert.match(wide, /provider\/model/);
   assert.match(wide, /session/);
-  assert.match(wide, /50 tok\/s/);
+  assert.match(wide, /1\.5k tokens/);
+  assert.doesNotMatch(wide, /tok\/s/);
+  assert.match(narrow, /1\.5k tokens/);
   assert.match(wide, /PR #42/);
   assert.doesNotMatch(narrow, /provider\//);
   assert.doesNotMatch(narrow, /session/);

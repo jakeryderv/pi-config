@@ -100,8 +100,8 @@ function gitDisplay(gitState: GitState, theme: Theme, density: FooterDensity) {
 function statsDisplay(options: {
   contextPercent: number | null | undefined;
   contextWindow: number;
+  cachedTokens: number;
   cachedCost: number;
-  tokensPerSecond: number | null;
   density: FooterDensity;
   theme: Theme;
 }) {
@@ -111,15 +111,9 @@ function statsDisplay(options: {
       : `${Math.round(options.contextPercent)}%/${formatTokens(options.contextWindow)}`;
   const parts = [
     options.theme.fg(contextThemeColor(options.contextPercent), contextDisplay),
+    options.theme.fg("muted", `${formatTokens(options.cachedTokens)} tokens`),
     options.theme.fg("muted", `$${options.cachedCost.toFixed(3)}`),
   ];
-  if (options.density !== "minimal") {
-    const speed =
-      options.tokensPerSecond === null
-        ? "— tok/s"
-        : `${Math.round(options.tokensPerSecond)} tok/s`;
-    parts.push(options.theme.fg("muted", speed));
-  }
   return parts.join(options.theme.fg("muted", " · "));
 }
 
@@ -127,8 +121,8 @@ export function renderDashboardFooter(options: {
   ctx: ExtensionContext;
   theme: Theme;
   gitState: GitState;
+  cachedTokens: number;
   cachedCost: number;
-  tokensPerSecond: number | null;
   thinkingLevel: ThinkingLevel;
   width: number;
 }) {
@@ -146,8 +140,8 @@ export function renderDashboardFooter(options: {
   const stats = statsDisplay({
     contextPercent: usage?.percent,
     contextWindow,
+    cachedTokens: options.cachedTokens,
     cachedCost: options.cachedCost,
-    tokensPerSecond: options.tokensPerSecond,
     density,
     theme: options.theme,
   });

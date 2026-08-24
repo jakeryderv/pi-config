@@ -23,32 +23,32 @@ export function columns(left: string, right: string, width: number) {
   return `${fittedLeft} ${fittedRight}`;
 }
 
-export function sessionCost(ctx: ExtensionContext) {
+export function sessionUsage(ctx: ExtensionContext) {
   let cost = 0;
+  let tokens = 0;
   for (const entry of ctx.sessionManager.getEntries()) {
+    let usage;
     if (entry.type === "message" && entry.message.role === "assistant") {
-      cost += entry.message.usage.cost.total;
+      usage = entry.message.usage;
     } else if (
       entry.type === "message" &&
-      entry.message.role === "toolResult" &&
-      entry.message.usage
+      entry.message.role === "toolResult"
     ) {
-      cost += entry.message.usage.cost.total;
-    } else if (
-      (entry.type === "branch_summary" || entry.type === "compaction") &&
-      entry.usage
-    ) {
-      cost += entry.usage.cost.total;
+      usage = entry.message.usage;
+    } else if (entry.type === "branch_summary" || entry.type === "compaction") {
+      usage = entry.usage;
     }
+    if (!usage) continue;
+    cost += usage.cost.total;
+    tokens += usage.totalTokens;
   }
-  return cost;
+  return { cost, tokens };
 }
 
-export function smoothRate(
-  previous: number | null,
-  sample: number,
-  alpha = 0.35,
-) {
-  if (previous === null) return sample;
-  return previous * (1 - alpha) + sample * alpha;
+export function sessionCost(ctx: ExtensionContext) {
+  return sessionUsage(ctx).cost;
+}
+
+export function sessionTokens(ctx: ExtensionContext) {
+  return sessionUsage(ctx).tokens;
 }

@@ -15,11 +15,13 @@ interface UsageLike {
 export interface ResponsePassSummary extends UsageLike {
   durationMs: number;
   modelCalls: number;
+  tokensPerSecond: number | null;
   stopReason?: string;
 }
 
 interface ActivePass extends UsageLike {
   startedAt: number;
+  generationMs: number;
   modelCalls: number;
   stopReason?: string;
 }
@@ -32,6 +34,7 @@ function emptyPass(startedAt: number): ActivePass {
     cacheRead: 0,
     cacheWrite: 0,
     totalTokens: 0,
+    generationMs: 0,
     modelCalls: 0,
   };
 }
@@ -167,9 +170,14 @@ function renderPassSummary(
 ) {
   if (!summary) return undefined;
   const status = passStatus(summary);
+  const speed =
+    summary.tokensPerSecond === null || summary.tokensPerSecond === undefined
+      ? "— tok/s"
+      : `${Math.round(summary.tokensPerSecond)} tok/s`;
+  const headline = `${status.label} in ${formatPassDuration(summary.durationMs)} · ${formatPassTokens(summary.output)} tokens · ${speed}`;
   let text = `${theme.fg(status.color, status.icon)} ${theme.fg(
     "muted",
-    `${status.label} in ${formatPassDuration(summary.durationMs)} · ${formatPassTokens(summary.totalTokens)} tokens`,
+    headline,
   )}`;
   if (expanded) {
     const details = [
@@ -193,58 +201,108 @@ interface InputEventLike {
   streamingBehavior?: string;
 }
 
+interface AssistantMessageEventLike {
+  message: {
+    role: string;
+    usage?: UsageLike;
+  };
+}
+
 interface TurnEndEventLike {
   message: {
     role: string;
     usage?: UsageLike;
     stopReason?: string;
   };
-  toolResults: readonly { usage?: UsageLike }[];
 }
 
-function createResponsePassTracker() {
-  let pendingStart: number | undefined;
-  let activePass: ActivePass | undefined;
+interface ResponsePassTrackerState {
+  pendingStart?: number;
+  activePass?: ActivePass;
+  assistantMessageStartedAt?: number;
+}
 
+function recordPassInput(
+  state: ResponsePassTrackerState,
+  event: InputEventLike,
+) {
+  if (
+    event.source === "interactive" &&
+    event.streamingBehavior === undefined &&
+    state.activePass === undefined
+  ) {
+    state.pendingStart = Date.now();
+  }
+}
+
+function startResponsePass(state: ResponsePassTrackerState) {
+  state.activePass = emptyPass(state.pendingStart ?? Date.now());
+  state.pendingStart = undefined;
+  state.assistantMessageStartedAt = undefined;
+}
+
+function recordAssistantStart(
+  state: ResponsePassTrackerState,
+  event: AssistantMessageEventLike,
+) {
+  if (state.activePass && event.message.role === "assistant") {
+    state.assistantMessageStartedAt = Date.now();
+  }
+}
+
+function recordAssistantEnd(
+  state: ResponsePassTrackerState,
+  event: AssistantMessageEventLike,
+) {
+  if (event.message.role !== "assistant") return;
+  if (
+    state.activePass &&
+    state.assistantMessageStartedAt !== undefined &&
+    (event.message.usage?.output ?? 0) > 0
+  ) {
+    state.activePass.generationMs += Math.max(
+      0,
+      Date.now() - state.assistantMessageStartedAt,
+    );
+  }
+  state.assistantMessageStartedAt = undefined;
+}
+
+function recordResponseTurn(
+  state: ResponsePassTrackerState,
+  event: TurnEndEventLike,
+) {
+  if (!state.activePass || event.message.role !== "assistant") return;
+  addUsage(state.activePass, event.message.usage);
+  state.activePass.modelCalls++;
+  state.activePass.stopReason = event.message.stopReason;
+}
+
+function settleResponsePass(
+  state: ResponsePassTrackerState,
+): ResponsePassSummary | undefined {
+  if (!state.activePass) return undefined;
+  const { startedAt, generationMs, ...totals } = state.activePass;
+  state.activePass = undefined;
+  state.assistantMessageStartedAt = undefined;
   return {
-    recordInput(event: InputEventLike) {
-      if (
-        event.source === "interactive" &&
-        event.streamingBehavior === undefined &&
-        activePass === undefined
-      ) {
-        pendingStart = Date.now();
-      }
-    },
-    start() {
-      activePass = emptyPass(pendingStart ?? Date.now());
-      pendingStart = undefined;
-    },
-    recordTurn(event: TurnEndEventLike) {
-      if (!activePass) return;
-      if (event.message.role === "assistant") {
-        addUsage(activePass, event.message.usage);
-        activePass.modelCalls++;
-        activePass.stopReason = event.message.stopReason;
-      }
-      for (const result of event.toolResults)
-        addUsage(activePass, result.usage);
-    },
-    settle(): ResponsePassSummary | undefined {
-      if (!activePass) return undefined;
-      const { startedAt, ...totals } = activePass;
-      activePass = undefined;
-      return { ...totals, durationMs: Date.now() - startedAt };
-    },
-    reset() {
-      pendingStart = undefined;
-      activePass = undefined;
-    },
+    ...totals,
+    durationMs: Date.now() - startedAt,
+    tokensPerSecond:
+      totals.output > 0 && generationMs > 0
+        ? totals.output / (generationMs / 1_000)
+        : null,
   };
 }
 
+function resetResponsePass(state: ResponsePassTrackerState) {
+  state.pendingStart = undefined;
+  state.activePass = undefined;
+  state.assistantMessageStartedAt = undefined;
+}
+
 export default function streamUiExtension(pi: ExtensionAPI) {
-  const tracker = createResponsePassTracker();
+  const tracker: ResponsePassTrackerState = {};
 
   pi.registerMarkdownTransformer(finalizeAssistantMarkdown);
 
@@ -254,11 +312,13 @@ export default function streamUiExtension(pi: ExtensionAPI) {
       renderPassSummary(entry.data, options.expanded, theme),
   );
 
-  pi.on("input", (event) => tracker.recordInput(event));
-  pi.on("before_agent_start", () => tracker.start());
-  pi.on("turn_end", (event) => tracker.recordTurn(event));
+  pi.on("input", (event) => recordPassInput(tracker, event));
+  pi.on("before_agent_start", () => startResponsePass(tracker));
+  pi.on("message_start", (event) => recordAssistantStart(tracker, event));
+  pi.on("message_end", (event) => recordAssistantEnd(tracker, event));
+  pi.on("turn_end", (event) => recordResponseTurn(tracker, event));
   pi.on("agent_settled", () => {
-    const summary = tracker.settle();
+    const summary = settleResponsePass(tracker);
     if (summary) pi.appendEntry(PASS_ENTRY_TYPE, summary);
   });
 
@@ -278,7 +338,7 @@ export default function streamUiExtension(pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", (_event, ctx) => {
-    tracker.reset();
+    resetResponsePass(tracker);
     if (ctx.mode !== "tui") return;
     ctx.ui.setWorkingMessage();
     ctx.ui.setHiddenThinkingLabel();

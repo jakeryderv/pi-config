@@ -4,7 +4,11 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { Markdown, type MarkdownTheme } from "@earendil-works/pi-tui";
+import {
+  type Component,
+  Markdown,
+  type MarkdownTheme,
+} from "@earendil-works/pi-tui";
 import {
   colorizeAssistantHeadings,
   finalizeAssistantMarkdown,
@@ -18,18 +22,27 @@ import {
 function createHarness() {
   const handlers = new Map<string, (...args: unknown[]) => unknown>();
   const entries: Array<{ customType: string; data: unknown }> = [];
+  let entryRenderer:
+    | ((
+        entry: { data: ResponsePassSummary },
+        options: { expanded: boolean },
+        theme: { fg: (color: string, text: string) => string },
+      ) => Component | undefined)
+    | undefined;
   const pi = {
     on(event: string, handler: (...args: unknown[]) => unknown) {
       handlers.set(event, handler);
     },
     registerMarkdownTransformer() {},
-    registerEntryRenderer() {},
+    registerEntryRenderer(_customType: string, renderer: typeof entryRenderer) {
+      entryRenderer = renderer;
+    },
     appendEntry(customType: string, data: unknown) {
       entries.push({ customType, data });
     },
   } as unknown as ExtensionAPI;
   streamUiExtension(pi);
-  return { handlers, entries };
+  return { handlers, entries, getEntryRenderer: () => entryRenderer };
 }
 
 test("stream UI installs and restores the restrained working indicator", async () => {
@@ -58,14 +71,32 @@ test("stream UI installs and restores the restrained working indicator", async (
   ]);
 });
 
-test("stream UI persists total elapsed time and tokens after the response settles", async () => {
-  const { handlers, entries } = createHarness();
-  const startedAt = Date.now();
+test("stream UI reports current-response output tokens and generation speed", async (t) => {
+  let now = 1_000;
+  t.mock.method(Date, "now", () => now);
+  const { handlers, entries, getEntryRenderer } = createHarness();
   await handlers.get("input")?.(
     { source: "interactive", streamingBehavior: undefined },
     {},
   );
   await handlers.get("before_agent_start")?.({}, {});
+  await handlers.get("message_start")?.({ message: { role: "assistant" } }, {});
+  now = 2_000;
+  await handlers.get("message_end")?.(
+    {
+      message: {
+        role: "assistant",
+        usage: {
+          input: 100,
+          output: 50,
+          cacheRead: 200,
+          cacheWrite: 25,
+          totalTokens: 375,
+        },
+      },
+    },
+    {},
+  );
   await handlers.get("turn_end")?.(
     {
       message: {
@@ -77,7 +108,7 @@ test("stream UI persists total elapsed time and tokens after the response settle
           cacheWrite: 25,
           totalTokens: 375,
         },
-        stopReason: "stop",
+        stopReason: "toolUse",
       },
       toolResults: [
         {
@@ -93,6 +124,41 @@ test("stream UI persists total elapsed time and tokens after the response settle
     },
     {},
   );
+  await handlers.get("message_start")?.({ message: { role: "assistant" } }, {});
+  now = 2_500;
+  await handlers.get("message_end")?.(
+    {
+      message: {
+        role: "assistant",
+        usage: {
+          input: 40,
+          output: 25,
+          cacheRead: 10,
+          cacheWrite: 0,
+          totalTokens: 75,
+        },
+      },
+    },
+    {},
+  );
+  await handlers.get("turn_end")?.(
+    {
+      message: {
+        role: "assistant",
+        usage: {
+          input: 40,
+          output: 25,
+          cacheRead: 10,
+          cacheWrite: 0,
+          totalTokens: 75,
+        },
+        stopReason: "stop",
+      },
+      toolResults: [],
+    },
+    {},
+  );
+  now = 3_000;
   await handlers.get("agent_settled")?.({}, {});
 
   assert.equal(entries.length, 1);
@@ -107,19 +173,28 @@ test("stream UI persists total elapsed time and tokens after the response settle
       totalTokens: summary.totalTokens,
       modelCalls: summary.modelCalls,
       stopReason: summary.stopReason,
+      durationMs: summary.durationMs,
+      tokensPerSecond: summary.tokensPerSecond,
     },
     {
-      input: 104,
-      output: 56,
-      cacheRead: 200,
+      input: 140,
+      output: 75,
+      cacheRead: 210,
       cacheWrite: 25,
-      totalTokens: 385,
-      modelCalls: 1,
+      totalTokens: 450,
+      modelCalls: 2,
       stopReason: "stop",
+      durationMs: 2_000,
+      tokensPerSecond: 50,
     },
   );
-  assert.ok(summary.durationMs >= 0);
-  assert.ok(summary.durationMs <= Date.now() - startedAt + 10);
+
+  const rendered = getEntryRenderer()?.(
+    { data: summary },
+    { expanded: false },
+    { fg: (_color, text) => text },
+  );
+  assert.match(rendered?.render(100).join("\n") ?? "", /75 tokens · 50 tok\/s/);
 });
 
 test("pass summary formats compact durations and token counts", () => {
