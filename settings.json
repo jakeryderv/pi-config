@@ -20,7 +20,11 @@
     "npm:@ff-labs/pi-fff",
     "npm:pi-hermes-memory",
     "npm:@quintinshaw/pi-dynamic-workflows",
-    "npm:@plannotator/pi-extension"
+    "npm:@plannotator/pi-extension",
+    "npm:pi-agent-browser-native",
+    "npm:@juicesharp/rpiv-voice",
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:@juicesharp/rpiv-todo"
   ],
   "defaultProjectTrust": "ask",
   "enableInstallTelemetry": false,
