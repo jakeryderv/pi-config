@@ -52,7 +52,6 @@ prompts for provider login) → add optional external dependencies as needed
 
 | Extension | Behavior |
 | --- | --- |
-| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; tool calls and results use Pi's native rendering. `/ps` uses Pi's native selector and editor dialogs for inspection. |
 | `copy-all/` | `/copy-all` copies user and assistant text from the active conversation branch. |
 | `system-prompt-inspector/` | `/dump-system-prompt` opens the current effective system prompt in Pi's native editor dialog. |
 
@@ -112,8 +111,7 @@ recorded in `extensions/UI-SURFACES.md`. After upgrading Pi or installed package
    `extensions/package-lock.json` and `extensions/node_modules/`.
 2. Run `just check`.
 3. In a TUI session, verify native prompt/autocomplete, footer/status placement,
-   streaming, built-in/background-terminal tool expansion, `/ps`, and
-   `/dump-system-prompt`.
+   streaming, built-in tool expansion, `/copy-all`, and `/dump-system-prompt`.
 
 **Package versions intentionally track latest.** The `packages` array in
 `settings.json` lists bare specs (`npm:pi-lens`, no `@version`), so pi installs
