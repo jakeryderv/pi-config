@@ -52,15 +52,17 @@ prompts for provider login) → add optional external dependencies as needed
 
 | Extension | Behavior |
 | --- | --- |
-| `dashboard/` | Responsive two-line footer with context pressure, accumulated session tokens and cost, model/thinking state, and Git/PR details; secondary session, provider, Git, and PR details progressively disappear at narrower widths. Installed-package statuses are excluded from the footer and presented as compact health rows in a non-capturing, fixed-width top-right overlay toggled by `/status-panel`. Git refreshes are watched/debounced with a 30s fallback; `/pr` forces an immediate refresh. |
-| `autocomplete-above/` | Renders the prompt as a rounded accent-blue surface and joins slash-command or `@` file autocomplete to it above a shared divider, keeping the prompt anchored in fullscreen mode. |
+| `ui-footer-status-override/` | Responsive two-line footer with context pressure, accumulated session tokens and cost, model/thinking state, and Git/PR details; secondary session, provider, Git, and PR details progressively disappear at narrower widths. Installed-package statuses are excluded from the footer and presented as compact health rows in a non-capturing, fixed-width top-right overlay toggled by `/status-panel`. Git refreshes are watched/debounced with a 30s fallback; `/pr` forces an immediate refresh. |
+| `ui-editor-override/` | Renders the prompt as a rounded accent-blue surface and joins slash-command or `@` file autocomplete to it above a shared divider, keeping the prompt anchored in fullscreen mode. |
 | `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; tool calls and results use Pi's native fallback rendering. `/ps` keeps its dedicated rounded terminal inspector. |
-| `stream-ui/` | Shows a restrained Carbonfox pulse and `Working` label while partial assistant prose stays hidden; each finalized assistant message then appears atomically through Pi's Markdown renderer with response-only H1–H6 colors (pink, magenta, blue, cyan, teal, muted). H3–H6 flatten to display-only H2 markers so Pi does not print their hashes; original stored Markdown remains unchanged. User Markdown and the global `mdHeading` theme remain unchanged. Finalized assistant fences normalize common language aliases (`ts`, `js`, `py`, `sh`, and related forms), while `markdown.codeBlockIndent` adds a thin `│` rail without changing stored code. Hidden thinking uses `Reasoning…`. When the response fully settles, a persistent TUI-only summary such as `✓ Responded in 12.4s · 1.2k tokens · 84 tok/s` records elapsed time, assistant output tokens for that response, and generation throughput. |
+| `ui-working-indicator/` | Replaces Pi's active-response presentation with a restrained Carbonfox pulse, the `Working` label, and the hidden-thinking label `Reasoning…`. |
+| `ui-assistant-presentation/` | Keeps partial assistant prose hidden until finalization, then applies response-only H1–H6 colors and normalizes common code-fence aliases (`ts`, `js`, `py`, `sh`, and related forms). Stored Markdown and user messages remain unchanged. |
+| `ui-response-metrics/` | Appends a persistent TUI-only response summary such as `✓ Responded in 12.4s · 1.2k tokens · 84 tok/s`, with expanded input, output, cache, and model-call details. |
 | `copy-all/` | `/copy-all` copies user and assistant text from the active conversation branch. |
-| `dump-system-prompt/` | `/dump-system-prompt` displays the current effective system prompt. |
+| `system-prompt-inspector/` | `/dump-system-prompt` displays the current effective system prompt. |
 
 Shared rounded-surface framing, terminal-native base backgrounds, selected-row
-fills, and extension-owned dialog behavior live in `extensions/shared/ui.ts`.
+fills, and extension-owned dialog behavior live in `extensions/shared/rounded-surfaces.ts`.
 Built-in tools and the background-terminal tools use Pi's native tool rendering,
 including normal inline expansion and raw fallback output. Using the terminal
 background for framed surfaces avoids seams around box-drawing cells. Extension
@@ -94,8 +96,8 @@ binaries or secrets:
 | --- | --- | --- |
 | **Node.js + npm/npx** | Pi itself; installing `packages`; running local MCP servers | system install |
 | **Pi CLI** | Coding-agent runtime | `tools/install-pi.sh` in my dotfiles repo (tracks the latest release), or install `@earendil-works/pi-coding-agent` directly |
-| **`just`, `git`** | activating this config (symlinks) and dashboard repository status | system install |
-| **GitHub CLI (`gh`)** | dashboard pull-request status and `/pr` | system install; the dashboard otherwise continues with local Git status only |
+| **`just`, `git`** | activating this config (symlinks) and footer repository status | system install |
+| **GitHub CLI (`gh`)** | footer pull-request status and `/pr` | system install; the footer otherwise continues with local Git status only |
 | **Language servers** (pyright, typescript-language-server, rust-analyzer, gopls, …) | `pi-lens` LSP nav/diagnostics | install per-language as needed; pi-lens uses whatever is on `PATH`. ast-grep is bundled (no install) |
 | **Playwright CLI + Chromium** | Shared browser automation skill | see `agent-skills` in my dotfiles repo |
 | **Provider credentials** | model access (Anthropic / OpenAI / Google) | `~/.pi/agent/auth.json` (run pi and log in; not tracked) |
@@ -111,11 +113,13 @@ fetch, pi-lens's bundled ast-grep, and the tracked custom extensions.
 
 Several global extension surfaces intentionally have one owner:
 
-- `dashboard/` owns the footer.
-- `autocomplete-above/` owns the editor component.
-- `stream-ui/` owns the working indicator and assistant Markdown transformation.
+- `ui-footer-status-override/` owns the footer and status overlay.
+- `ui-editor-override/` owns the editor component.
+- `ui-working-indicator/` owns the active-response indicator and labels.
+- `ui-assistant-presentation/` owns assistant Markdown transformation.
+- `ui-response-metrics/` owns the response-summary entry.
 
-Do not add another footer, editor, working-indicator, or Markdown-transformer
+Do not add another footer, editor, working-indicator, Markdown-transformer, or response-summary renderer
 without explicitly composing it with or replacing the current owner. After
 upgrading Pi or installed packages:
 
@@ -123,8 +127,8 @@ upgrading Pi or installed packages:
    `@earendil-works/pi-*` development dependencies and refresh
    `extensions/package-lock.json` and `extensions/node_modules/`.
 2. Run `just check`.
-3. In a TUI session, verify the dashboard footer, prompt/autocomplete placement,
-   streaming/final Markdown transition, and native built-in/background-terminal
+3. In a TUI session, verify the footer/status overlay, prompt/autocomplete placement,
+   working indicator, streaming/final Markdown transition, response summary, and native built-in/background-terminal
    tool expansion.
 
 **Package versions intentionally track latest.** The `packages` array in

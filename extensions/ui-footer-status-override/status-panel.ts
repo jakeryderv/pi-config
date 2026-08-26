@@ -9,7 +9,7 @@ import {
   visibleWidth,
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
-import { frameSurface } from "../shared/ui.ts";
+import { frameSurface } from "../shared/rounded-surfaces.ts";
 
 const EMPTY_STATUSES = new Map<string, string>();
 

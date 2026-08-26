@@ -5,7 +5,7 @@ import type {
   ReadonlyFooterDataProvider,
 } from "@earendil-works/pi-coding-agent";
 import { sessionUsage } from "./format.ts";
-import { renderDashboardFooter } from "./footer.ts";
+import { renderFooterOverride } from "./footer.ts";
 import {
   EMPTY_GIT,
   GIT_MUTATING_TOOLS,
@@ -18,7 +18,7 @@ const GIT_REFRESH_MS = 30_000;
 const GIT_REFRESH_DEBOUNCE_MS = 250;
 const PR_REFRESH_MS = 5 * 60_000;
 
-export default function dashboardExtension(pi: ExtensionAPI) {
+export default function footerStatusOverrideExtension(pi: ExtensionAPI) {
   let gitState = EMPTY_GIT;
   let refreshTimer: ReturnType<typeof setInterval> | undefined;
   let refreshDebounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -205,7 +205,7 @@ export default function dashboardExtension(pi: ExtensionAPI) {
           render = undefined;
         },
         render(width: number) {
-          return renderDashboardFooter({
+          return renderFooterOverride({
             ctx,
             theme,
             gitState,
@@ -274,7 +274,7 @@ export default function dashboardExtension(pi: ExtensionAPI) {
   });
 
   pi.registerCommand("pr", {
-    description: "Refresh dashboard Git and pull-request information",
+    description: "Refresh footer Git and pull-request information",
     handler: async (_args, ctx) => {
       await refreshGit(ctx, true);
       if (!gitState.branch) ctx.ui.notify("Not a Git repository", "warning");

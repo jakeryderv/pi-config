@@ -3,7 +3,10 @@ import {
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
 import { stripTerminalSequences } from "@earendil-works/pi-tui";
-import { frameSurfaceSections, persistentBackground } from "../shared/ui.ts";
+import {
+  frameSurfaceSections,
+  persistentBackground,
+} from "../shared/rounded-surfaces.ts";
 
 interface AutocompleteList {
   render(width: number): string[];

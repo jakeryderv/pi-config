@@ -22,7 +22,7 @@ import {
 import {
   contextThemeColor,
   footerDensity,
-  renderDashboardFooter,
+  renderFooterOverride,
   thinkingThemeColor,
 } from "./footer.ts";
 import {
@@ -32,7 +32,7 @@ import {
   statusTone,
 } from "./status-panel.ts";
 
-test("dashboard formats compact values", () => {
+test("footer override formats compact values", () => {
   assert.equal(formatTokens(999), "999");
   assert.equal(formatTokens(1_500), "1.5k");
   assert.equal(formatTokens(15_000), "15k");
@@ -84,7 +84,7 @@ test("status panel renders package statuses in a bordered panel", () => {
   assert.match(rendered, /\/status-panel/);
 });
 
-test("dashboard includes nested and summary model usage", () => {
+test("footer override includes nested and summary model usage", () => {
   const entries = [
     {
       type: "message",
@@ -118,13 +118,13 @@ test("dashboard includes nested and summary model usage", () => {
   assert.equal(sessionTokens(ctx), 185);
 });
 
-test("dashboard selects responsive footer density", () => {
+test("footer override selects responsive density", () => {
   assert.equal(footerDensity(120), "wide");
   assert.equal(footerDensity(80), "compact");
   assert.equal(footerDensity(60), "minimal");
 });
 
-test("dashboard footer removes secondary details at narrow widths", () => {
+test("footer override removes secondary details at narrow widths", () => {
   // SAFETY: footer rendering uses only fg() from this theme test double.
   const theme = {
     fg: (_color: string, text: string) => text,
@@ -154,8 +154,8 @@ test("dashboard footer removes secondary details at narrow widths", () => {
     thinkingLevel: "high" as const,
   };
 
-  const wide = renderDashboardFooter({ ...state, width: 120 }).join("\n");
-  const narrow = renderDashboardFooter({ ...state, width: 60 }).join("\n");
+  const wide = renderFooterOverride({ ...state, width: 120 }).join("\n");
+  const narrow = renderFooterOverride({ ...state, width: 60 }).join("\n");
   assert.match(wide, /provider\/model/);
   assert.match(wide, /session/);
   assert.match(wide, /1\.5k tokens/);
@@ -168,14 +168,14 @@ test("dashboard footer removes secondary details at narrow widths", () => {
   assert.doesNotMatch(narrow, /PR #42/);
 });
 
-test("dashboard colors context pressure by threshold", () => {
+test("footer override colors context pressure by threshold", () => {
   assert.equal(contextThemeColor(undefined), "muted");
   assert.equal(contextThemeColor(70), "muted");
   assert.equal(contextThemeColor(71), "warning");
   assert.equal(contextThemeColor(91), "error");
 });
 
-test("dashboard refreshes Git only after likely mutating tools", () => {
+test("footer override refreshes Git only after likely mutating tools", () => {
   assert.equal(GIT_MUTATING_TOOLS.has("read"), false);
   assert.equal(GIT_MUTATING_TOOLS.has("ffgrep"), false);
   assert.equal(GIT_MUTATING_TOOLS.has("edit"), true);
@@ -183,7 +183,7 @@ test("dashboard refreshes Git only after likely mutating tools", () => {
   assert.equal(GIT_MUTATING_TOOLS.has("subagent"), true);
 });
 
-test("dashboard inspects normal Git state with one subprocess", async () => {
+test("footer override inspects normal Git state with one subprocess", async () => {
   const calls: string[][] = [];
   // SAFETY: inspectGitState uses only the exec method and its standard result fields.
   const pi = {
@@ -208,7 +208,7 @@ test("dashboard inspects normal Git state with one subprocess", async () => {
   assert.equal(calls[0]?.[0], "status");
 });
 
-test("dashboard resolves a detached Git revision separately", async () => {
+test("footer override resolves a detached Git revision separately", async () => {
   const calls: string[][] = [];
   // SAFETY: inspectGitState uses only the exec method and its standard result fields.
   const pi = {
@@ -232,7 +232,7 @@ test("dashboard resolves a detached Git revision separately", async () => {
   assert.equal(calls.length, 2);
 });
 
-test("dashboard maps effort levels to their theme colors", () => {
+test("footer override maps effort levels to theme colors", () => {
   const levels = [
     "off",
     "minimal",

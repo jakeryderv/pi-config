@@ -58,103 +58,6 @@ export function formatPassDuration(durationMs: number) {
 
 export const formatPassTokens = formatTokens;
 
-const CODE_LANGUAGE_ALIASES: Readonly<Record<string, string>> = {
-  js: "javascript",
-  py: "python",
-  sh: "bash",
-  shell: "bash",
-  ts: "typescript",
-  yml: "yaml",
-  zsh: "bash",
-};
-
-const ASSISTANT_HEADING_COLORS = [
-  "\x1b[38;2;255;126;182m",
-  "\x1b[38;2;190;149;255m",
-  "\x1b[38;2;120;169;255m",
-  "\x1b[38;2;51;177;255m",
-  "\x1b[38;2;61;219;217m",
-  "\x1b[38;2;182;184;187m",
-] as const;
-const RESET_FOREGROUND = "\x1b[39m";
-
-export function normalizeCodeFenceLanguages(markdown: string) {
-  const lines = markdown.split("\n");
-  let fence: { marker: "`" | "~"; length: number } | undefined;
-
-  return lines
-    .map((line) => {
-      const match = line.match(/^( {0,3})(`{3,}|~{3,})(.*)$/);
-      if (!match?.[2] || match[3] === undefined) return line;
-      const marker = match[2][0] as "`" | "~";
-      const remainder = match[3];
-
-      if (fence) {
-        if (
-          marker === fence.marker &&
-          match[2].length >= fence.length &&
-          remainder.trim() === ""
-        ) {
-          fence = undefined;
-        }
-        return line;
-      }
-
-      fence = { marker, length: match[2].length };
-      const info = remainder.match(/^([ \t]*)(\S+)(.*)$/);
-      if (!info?.[2]) return line;
-      const language = CODE_LANGUAGE_ALIASES[info[2].toLowerCase()];
-      if (!language) return line;
-      return `${match[1]}${match[2]}${info[1]}${language}${info[3]}`;
-    })
-    .join("\n");
-}
-
-export function colorizeAssistantHeadings(markdown: string) {
-  const lines = markdown.split("\n");
-  let fence: { marker: "`" | "~"; length: number } | undefined;
-
-  return lines
-    .map((line) => {
-      const fenceMatch = line.match(/^ {0,3}(`{3,}|~{3,})/);
-      if (fenceMatch?.[1]) {
-        const marker = fenceMatch[1][0] as "`" | "~";
-        if (!fence) {
-          fence = { marker, length: fenceMatch[1].length };
-        } else if (
-          marker === fence.marker &&
-          fenceMatch[1].length >= fence.length &&
-          line
-            .slice(line.indexOf(fenceMatch[1]) + fenceMatch[1].length)
-            .trim() === ""
-        ) {
-          fence = undefined;
-        }
-        return line;
-      }
-      if (fence) return line;
-
-      const heading = line.match(
-        /^( {0,3})(#{1,6})([ \t]+)(.*?)([ \t]+#+[ \t]*)?$/,
-      );
-      if (!heading?.[2] || heading[4] === undefined) return line;
-      const level = heading[2].length;
-      const color = ASSISTANT_HEADING_COLORS[level - 1];
-      const displayHeading = level >= 3 ? "##" : heading[2];
-      return `${heading[1]}${displayHeading}${heading[3]}${color}${heading[4]}${RESET_FOREGROUND}${heading[5] ?? ""}`;
-    })
-    .join("\n");
-}
-
-export function finalizeAssistantMarkdown(
-  markdown: string,
-  context: { messageType: string; isStreaming: boolean },
-) {
-  if (context.messageType !== "assistant") return markdown;
-  if (context.isStreaming) return "";
-  return colorizeAssistantHeadings(normalizeCodeFenceLanguages(markdown));
-}
-
 function passStatus(summary: ResponsePassSummary) {
   if (summary.stopReason === "error")
     return { icon: "×", label: "Failed", color: "error" } as const;
@@ -301,10 +204,8 @@ function resetResponsePass(state: ResponsePassTrackerState) {
   state.assistantMessageStartedAt = undefined;
 }
 
-export default function streamUiExtension(pi: ExtensionAPI) {
+export default function responseMetricsExtension(pi: ExtensionAPI) {
   const tracker: ResponsePassTrackerState = {};
-
-  pi.registerMarkdownTransformer(finalizeAssistantMarkdown);
 
   pi.registerEntryRenderer<ResponsePassSummary>(
     PASS_ENTRY_TYPE,
@@ -321,27 +222,5 @@ export default function streamUiExtension(pi: ExtensionAPI) {
     const summary = settleResponsePass(tracker);
     if (summary) pi.appendEntry(PASS_ENTRY_TYPE, summary);
   });
-
-  pi.on("session_start", (_event, ctx) => {
-    if (ctx.mode !== "tui") return;
-    ctx.ui.setWorkingMessage("Working");
-    ctx.ui.setHiddenThinkingLabel("Reasoning…");
-    ctx.ui.setWorkingIndicator({
-      frames: [
-        ctx.ui.theme.fg("dim", "·"),
-        ctx.ui.theme.fg("muted", "•"),
-        ctx.ui.theme.fg("accent", "●"),
-        ctx.ui.theme.fg("muted", "•"),
-      ],
-      intervalMs: 160,
-    });
-  });
-
-  pi.on("session_shutdown", (_event, ctx) => {
-    resetResponsePass(tracker);
-    if (ctx.mode !== "tui") return;
-    ctx.ui.setWorkingMessage();
-    ctx.ui.setHiddenThinkingLabel();
-    ctx.ui.setWorkingIndicator();
-  });
+  pi.on("session_shutdown", () => resetResponsePass(tracker));
 }

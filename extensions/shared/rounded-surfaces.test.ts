@@ -5,7 +5,7 @@ import {
   frameSurface,
   frameSurfaceSections,
   persistentBackground,
-} from "./ui.ts";
+} from "./rounded-surfaces.ts";
 
 const plain = (text: string) => text;
 

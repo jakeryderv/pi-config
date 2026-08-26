@@ -117,7 +117,7 @@ function statsDisplay(options: {
   return parts.join(options.theme.fg("muted", " · "));
 }
 
-export function renderDashboardFooter(options: {
+export function renderFooterOverride(options: {
   ctx: ExtensionContext;
   theme: Theme;
   gitState: GitState;
