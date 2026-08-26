@@ -9,11 +9,7 @@ import { branchContainsLeaf } from "../shared/session-branch.ts";
 import type { BackgroundTerminal } from "./domain.ts";
 import { describe, sanitizeOutput, toolReport } from "./output.ts";
 import { startTerminal, stopTerminal } from "./process.ts";
-import {
-  clearBackgroundTerminalWidget,
-  inspectBackgroundTerminals,
-  updateBackgroundTerminalWidget,
-} from "./ui.ts";
+import { inspectBackgroundTerminals } from "./ui.ts";
 
 export { appendBounded, sanitizeOutput } from "./output.ts";
 
@@ -27,9 +23,6 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
 
   const running = () =>
     [...terminals.values()].filter((terminal) => terminal.status === "running");
-
-  const updateWidget = () =>
-    updateBackgroundTerminalWidget(sessionContext, running().length);
 
   const announceSettlement = (terminal: BackgroundTerminal) => {
     if (
@@ -83,11 +76,9 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
       command: options.command,
       cwd: options.cwd,
       originLeafId: options.originLeafId,
-      onChange: updateWidget,
       onSettlement: announceSettlement,
     });
     terminals.set(terminal.id, terminal);
-    updateWidget();
     return terminal;
   };
 
@@ -107,12 +98,10 @@ export default function backgroundTerminalsExtension(pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
     sessionContext = ctx;
     shuttingDown = false;
-    updateWidget();
   });
 
   pi.on("session_shutdown", async () => {
     shuttingDown = true;
-    clearBackgroundTerminalWidget(sessionContext);
     await Promise.all(running().map(stop));
     terminals.clear();
     sessionContext = undefined;

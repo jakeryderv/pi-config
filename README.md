@@ -52,23 +52,15 @@ prompts for provider login) → add optional external dependencies as needed
 
 | Extension | Behavior |
 | --- | --- |
-| `ui-footer-status-override/` | Responsive two-line footer with context pressure, accumulated session tokens and cost, model/thinking state, and Git/PR details; secondary session, provider, Git, and PR details progressively disappear at narrower widths. Installed-package statuses are excluded from the footer and presented as compact health rows in a non-capturing, fixed-width top-right overlay toggled by `/status-panel`. Git refreshes are watched/debounced with a 30s fallback; `/pr` forces an immediate refresh. |
-| `ui-editor-override/` | Renders the prompt as a rounded accent-blue surface and joins slash-command or `@` file autocomplete to it above a shared divider, keeping the prompt anchored in fullscreen mode. |
-| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; tool calls and results use Pi's native fallback rendering. `/ps` keeps its dedicated rounded terminal inspector. |
-| `ui-working-indicator/` | Replaces Pi's active-response presentation with a restrained Carbonfox pulse, the `Working` label, and the hidden-thinking label `Reasoning…`. |
-| `ui-assistant-presentation/` | Keeps partial assistant prose hidden until finalization, then applies response-only H1–H6 colors and normalizes common code-fence aliases (`ts`, `js`, `py`, `sh`, and related forms). Stored Markdown and user messages remain unchanged. |
-| `ui-response-metrics/` | Appends a persistent TUI-only response summary such as `✓ Responded in 12.4s · 1.2k tokens · 84 tok/s`, with expanded input, output, cache, and model-call details. |
+| `background-terminals/` | Managed long-running processes through `bg_start`, `bg_status`, `bg_list`, and `bg_kill`; tool calls and results use Pi's native rendering. `/ps` uses Pi's native selector and editor dialogs for inspection. |
 | `copy-all/` | `/copy-all` copies user and assistant text from the active conversation branch. |
-| `system-prompt-inspector/` | `/dump-system-prompt` displays the current effective system prompt. |
+| `system-prompt-inspector/` | `/dump-system-prompt` opens the current effective system prompt in Pi's native editor dialog. |
 
-Shared rounded-surface framing, terminal-native base backgrounds, selected-row
-fills, and extension-owned dialog behavior live in `extensions/shared/rounded-surfaces.ts`.
-Built-in tools and the background-terminal tools use Pi's native tool rendering,
-including normal inline expansion and raw fallback output. Using the terminal
-background for framed surfaces avoids seams around box-drawing cells. Extension
-runtime imports are supplied by Pi;
-`extensions/package-lock.json` exists only to make local type-checking and tests
-reproducible.
+Repository-owned extensions do not replace Pi's editor, autocomplete, footer,
+status placement, working indicator, assistant Markdown, or transcript rendering.
+The remaining UI interactions are inventoried in `extensions/UI-SURFACES.md`.
+Extension runtime imports are supplied by Pi; `extensions/package-lock.json`
+exists only to make local type-checking and tests reproducible.
 
 Third-party tools use their package-owned renderers. The tracked preferences
 choose supported compact modes without replacing package execution:
@@ -96,8 +88,7 @@ binaries or secrets:
 | --- | --- | --- |
 | **Node.js + npm/npx** | Pi itself; installing `packages`; running local MCP servers | system install |
 | **Pi CLI** | Coding-agent runtime | `tools/install-pi.sh` in my dotfiles repo (tracks the latest release), or install `@earendil-works/pi-coding-agent` directly |
-| **`just`, `git`** | activating this config (symlinks) and footer repository status | system install |
-| **GitHub CLI (`gh`)** | footer pull-request status and `/pr` | system install; the footer otherwise continues with local Git status only |
+| **`just`, `git`** | activating this config and working with the repository | system install |
 | **Language servers** (pyright, typescript-language-server, rust-analyzer, gopls, …) | `pi-lens` LSP nav/diagnostics | install per-language as needed; pi-lens uses whatever is on `PATH`. ast-grep is bundled (no install) |
 | **Playwright CLI + Chromium** | Shared browser automation skill | see `agent-skills` in my dotfiles repo |
 | **Provider credentials** | model access (Anthropic / OpenAI / Google) | `~/.pi/agent/auth.json` (run pi and log in; not tracked) |
@@ -111,25 +102,18 @@ fetch, pi-lens's bundled ast-grep, and the tracked custom extensions.
 
 ### Extension ownership and Pi upgrades
 
-Several global extension surfaces intentionally have one owner:
-
-- `ui-footer-status-override/` owns the footer and status overlay.
-- `ui-editor-override/` owns the editor component.
-- `ui-working-indicator/` owns the active-response indicator and labels.
-- `ui-assistant-presentation/` owns assistant Markdown transformation.
-- `ui-response-metrics/` owns the response-summary entry.
-
-Do not add another footer, editor, working-indicator, Markdown-transformer, or response-summary renderer
-without explicitly composing it with or replacing the current owner. After
-upgrading Pi or installed packages:
+Repository-owned extensions intentionally leave Pi's global editor, footer,
+status placement, working indicator, Markdown, and transcript rendering native.
+New global UI replacements should be treated as explicit ownership decisions and
+recorded in `extensions/UI-SURFACES.md`. After upgrading Pi or installed packages:
 
 1. Run `just doctor`. If it reports drift, update the three
    `@earendil-works/pi-*` development dependencies and refresh
    `extensions/package-lock.json` and `extensions/node_modules/`.
 2. Run `just check`.
-3. In a TUI session, verify the footer/status overlay, prompt/autocomplete placement,
-   working indicator, streaming/final Markdown transition, response summary, and native built-in/background-terminal
-   tool expansion.
+3. In a TUI session, verify native prompt/autocomplete, footer/status placement,
+   streaming, built-in/background-terminal tool expansion, `/ps`, and
+   `/dump-system-prompt`.
 
 **Package versions intentionally track latest.** The `packages` array in
 `settings.json` lists bare specs (`npm:pi-lens`, no `@version`), so pi installs

@@ -8,7 +8,6 @@ interface StartTerminalOptions {
   command: string;
   cwd: string;
   originLeafId: string | null;
-  onChange: () => void;
   onSettlement: (terminal: BackgroundTerminal) => void;
 }
 
@@ -18,7 +17,6 @@ export function startTerminal({
   command,
   cwd,
   originLeafId,
-  onChange,
   onSettlement,
 }: StartTerminalOptions): BackgroundTerminal {
   let resolveClose = () => {};
@@ -75,7 +73,6 @@ export function startTerminal({
         ? "failed"
         : "exited";
     terminal.resolveClose();
-    onChange();
     onSettlement(terminal);
   });
 

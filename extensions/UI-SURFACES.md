@@ -1,19 +1,14 @@
-# UI surface ownership
+# UI interaction inventory
 
-This inventory identifies every repository-owned Pi UI surface, the public API it touches, and the native behavior restored when the owner is removed. Top-level `ui-*` directories are independently auto-discovered extensions; feature extensions keep their optional presentation code beside the feature.
+Repository-owned extensions no longer replace Pi's editor, autocomplete, footer, status placement, working indicator, assistant Markdown, or transcript rendering. The remaining interactions use Pi's native UI APIs.
 
-| Owner | Pi API / hook | Surface | Ownership | Removing it restores |
-| --- | --- | --- | --- | --- |
-| `ui-editor-override/` | `ctx.ui.setEditorComponent()` | Prompt and autocomplete | Replaces Pi's editor renderer to move autocomplete above a rounded prompt surface | Native editor, border, and autocomplete placement |
-| `ui-footer-status-override/` | `ctx.ui.setFooter()`, `ctx.ui.custom({ overlay: true })` | Footer and extension statuses | Replaces the footer and relocates package statuses into `/status-panel` | Native footer and native extension-status placement |
-| `ui-working-indicator/` | `setWorkingMessage()`, `setHiddenThinkingLabel()`, `setWorkingIndicator()` | Active-response indicator | Replaces Pi's working and hidden-reasoning labels and animation | Native working indicator and labels |
-| `ui-assistant-presentation/` | `pi.registerMarkdownTransformer()` | Assistant transcript Markdown | Hides partial prose, normalizes fence aliases, and colors finalized headings | Native streaming and Markdown presentation |
-| `ui-response-metrics/` | `pi.registerEntryRenderer()`, `pi.appendEntry()` | TUI-only transcript summary | Adds elapsed time, output-token, and throughput summaries | No per-response summary entry |
-| `background-terminals/ui.ts` | `ctx.ui.setWidget()`, `ctx.ui.custom()` | Background-process widget and `/ps` inspector | Adds feature-specific status and inspection UI | Background tools remain, without their widget/inspector |
-| `system-prompt-inspector/` | `pi.registerMessageRenderer()` | `/dump-system-prompt` transcript card | Adds a custom message renderer for prompt inspection | No system-prompt inspection card |
-| `shared/rounded-surfaces.ts` | pi-tui components through callers | Shared frames and dialogs | Supplies rounded frames, compound surfaces, and custom select/input overlays | Callers must use native Pi surfaces or local rendering |
+| Owner | Pi API | Interaction | Removing it removes |
+| --- | --- | --- | --- |
+| `background-terminals/ui.ts` | `ctx.ui.select()`, `ctx.ui.editor()`, `ctx.ui.notify()` | Native `/ps` terminal selection and output inspection | Only the `/ps` inspection UI; the `bg_*` tools and process lifecycle are separate |
+| `system-prompt-inspector/` | `ctx.ui.editor()` | Native `/dump-system-prompt` inspection dialog | The system-prompt inspection command |
+| `copy-all/` | `ctx.ui.notify()` | Native success/empty-result notifications | The `/copy-all` command and its notifications |
 
-## Native configuration that also affects appearance
+## Native appearance configuration
 
 These are supported Pi configuration rather than extension-owned replacements:
 
@@ -21,7 +16,6 @@ These are supported Pi configuration rather than extension-owned replacements:
 - `settings.json` selects fullscreen mode, editor/output padding, autocomplete height, scrollbar behavior, and the Markdown code-block rail.
 - `mcp.json`, `pi-lens.json`, and `subagent/config.json` select package-supported compact render modes.
 
-## Non-UI extensions
+## Shared support
 
-- `copy-all/` adds `/copy-all` and uses only native notifications.
-- `background-terminals/` owns process lifecycle and the `bg_*` tools independently of `background-terminals/ui.ts`.
+- `shared/session-branch.ts` protects background-terminal completion delivery when conversation branch navigation has moved away from the terminal's origin.
