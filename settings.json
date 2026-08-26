@@ -25,7 +25,8 @@
     "npm:@juicesharp/rpiv-voice",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:@juicesharp/rpiv-todo",
-    "https://github.com/ayghri/i-have-adhd"
+    "https://github.com/ayghri/i-have-adhd",
+    "npm:pi-background-tasks"
   ],
   "defaultProjectTrust": "ask",
   "enableInstallTelemetry": false,
