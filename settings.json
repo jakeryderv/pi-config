@@ -39,7 +39,7 @@
     "google/gemini-3.7-flash:high",
     "google/gemini-3.1-pro-preview:high"
   ],
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "editorPaddingX": 1,
   "outputPad": 1,
   "autocompleteMaxVisible": 6,
