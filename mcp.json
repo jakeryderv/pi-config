@@ -12,6 +12,19 @@
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       },
       "lifecycle": "lazy"
+    },
+    "aws-mcp": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.us-east-1.api.aws/mcp",
+        "--metadata",
+        "INSTALL_SOURCE=aws-cli"
+      ],
+      "env": {
+        "AWS_MCP_PROXY_PROFILES": "default"
+      },
+      "lifecycle": "lazy"
     }
   }
 }
