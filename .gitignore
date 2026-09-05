@@ -1,3 +1,14 @@
+# Local environment and credentials (examples remain trackable).
 .env
+.env.*
+!.env.example
+!.env.*.example
 .envrc
+auth.json
+*.pem
+*.key
+
 node_modules/
+
+# Background task metadata/output, not project Pi configuration.
+.pi/tasks/

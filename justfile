@@ -51,35 +51,59 @@ unlink:
         echo "rm    {{ lens_target }}"
     fi
 
-# Show what is linked, missing, or shadowed
+# Show exact deployment links; fail for missing, broken, or incorrect links
 status:
     #!/usr/bin/env bash
     set -uo pipefail
-    for entry in {{ entries }}; do
-        tgt="{{ agent_dir }}/$entry"
-        if [ -L "$tgt" ] && [[ "$(readlink "$tgt")" == "{{ repo }}"/* ]]; then
-            echo "ok      $entry"
-        elif [ -e "$tgt" ]; then
-            echo "shadow  $entry ($tgt is not a link into this repo)"
+    mismatch=0
+    check_link() {
+        local label="$1" target="$2" expected="$3"
+        if [ -L "$target" ] && [ ! -e "$target" ]; then
+            echo "broken  $label ($target)"
+        elif [ -L "$target" ] && [ "$(readlink "$target")" = "$expected" ]; then
+            echo "ok      $label"
+            return
+        elif [ -e "$target" ]; then
+            echo "shadow  $label (expected $target -> $expected)"
         else
-            echo "absent  $entry"
+            echo "absent  $label (expected at $target)"
         fi
+        mismatch=1
+    }
+    for entry in {{ entries }}; do
+        check_link "$entry" "{{ agent_dir }}/$entry" "{{ repo }}/$entry"
     done
-    if [ -L "{{ lens_target }}" ] && [[ "$(readlink "{{ lens_target }}")" == "{{ lens_config }}" ]]; then
-        echo "ok      pi-lens.json -> ~/.pi-lens/config.json"
-    elif [ -e "{{ lens_target }}" ]; then
-        echo "shadow  pi-lens.json ({{ lens_target }} is not a link to {{ lens_config }})"
-    else
-        echo "absent  pi-lens.json (expected at {{ lens_target }})"
-    fi
+    check_link "pi-lens.json" "{{ lens_target }}" "{{ lens_config }}"
+    exit "$mismatch"
 
-# Check links and verify that local extension dependencies match the Pi runtime
+# Check deployment, JSON, executables, and development/runtime compatibility
 doctor:
     #!/usr/bin/env bash
     set -euo pipefail
-    just --justfile "{{ repo }}/justfile" status
-    runtime_version="$(pi --version)"
     mismatch=0
+    just --justfile "{{ repo }}/justfile" status || mismatch=1
+    for command in node npm git pi; do
+        if command -v "$command" >/dev/null 2>&1; then
+            echo "ok      executable $command"
+        else
+            echo "missing executable $command" >&2
+            mismatch=1
+        fi
+    done
+    # JSON checks need Node and git; stop here if either is unavailable.
+    command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || exit 1
+    just --justfile "{{ repo }}/justfile" check-json || exit 1
+    # Check configured local MCP launchers without starting servers or reading credentials.
+    while IFS= read -r command; do
+        if command -v "$command" >/dev/null 2>&1; then
+            echo "ok      MCP executable $command"
+        else
+            echo "missing MCP executable $command (see README dependencies)" >&2
+            mismatch=1
+        fi
+    done < <(node -e 'const c=require(process.argv[1]); for (const s of Object.values(c.mcpServers ?? {})) if (s.disabled !== true && typeof s.command === "string") console.log(s.command)' "{{ repo }}/mcp.json")
+    command -v pi >/dev/null 2>&1 || exit 1
+    runtime_version="$(pi --version)"
     for package in pi-ai pi-coding-agent pi-tui; do
         package_json="{{ repo }}/extensions/node_modules/@earendil-works/$package/package.json"
         if [ ! -f "$package_json" ]; then
@@ -97,7 +121,20 @@ doctor:
     done
     exit "$mismatch"
 
-# Type-check and test the extensions
-check:
-    npm --prefix {{ repo }}/extensions run check
-    npm --prefix {{ repo }}/extensions test
+# Install locked development dependencies (does not deploy live config)
+setup:
+    npm --prefix "{{ repo }}/extensions" ci --ignore-scripts
+
+# Validate tracked and new, non-ignored JSON files
+check-json:
+    node "{{ repo }}/scripts/check-json.mjs"
+
+# Run extension and isolated deployment regression tests
+test:
+    npm --prefix "{{ repo }}/extensions" test
+    node --test "{{ repo }}/scripts/config.test.mjs"
+
+# Credential-free checks shared with CI
+check: check-json
+    npm --prefix "{{ repo }}/extensions" run check
+    just --justfile "{{ repo }}/justfile" test
