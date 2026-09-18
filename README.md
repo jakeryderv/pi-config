@@ -99,6 +99,27 @@ GitHub Actions runs `just setup` and `just check` on pushes and pull requests,
 using Node 24. Deployment tests use temporary home directories, not live config.
 CI needs no Pi login, AWS credentials, or globally installed Pi CLI.
 
+## Standalone skills
+
+Four lightweight adaptations live in the tracked `skills/` directory:
+
+| Skill | Use |
+| --- | --- |
+| [`grill-me`](skills/grill-me/SKILL.md) | Stress-test a design and resolve consequential tradeoffs before implementation. |
+| [`diagnose-root`](skills/diagnose-root/SKILL.md) | Reproduce, isolate, and test competing explanations for a bug. |
+| [`source-comparison`](skills/source-comparison/SKILL.md) | Compare tools or claims with an evidence, caveats, and confidence matrix. |
+| [`claims-code-audit`](skills/claims-code-audit/SKILL.md) | Check paper, README, or documentation claims against implementation evidence. |
+
+These are adapted from bigpowers and Feynman, with commit-pinned attribution and
+an upstream MIT license in each skill directory. Neither package is installed.
+The adaptations use existing tools without mandatory scaffolding, Git hooks,
+automatic commits, or delegation; delegation requires explicit user authorization.
+
+The existing `~/.pi/agent/skills` symlink exposes them globally. Run `/reload` in
+an existing session (or start a new one), then invoke `/skill:grill-me`,
+`/skill:diagnose-root`, `/skill:source-comparison`, or `/skill:claims-code-audit`.
+Pi can also select them automatically when their descriptions match the task.
+
 ## Installed package responsibilities
 
 | Package | Responsibility |
