@@ -20,7 +20,7 @@ local files beside the links.
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
 | `extensions/` — custom TS extensions, Herdr integration, and development lockfile | `fff/`, `pi-hermes-memory/`, `projects-memory/`, `tmp/` — extension state |
 | `themes/` — custom TUI themes (currently none; Pi's built-in `system` theme follows the terminal palette) | `~/.pi/artifacts/`, `web-search-cache/`, `rules/` — generated state |
-| `skills/` — Pi-only skills; shared skills come from `~/.agents/skills/` | `~/.pi/web-search.json` (provider keys), `exa-usage.json` — machine-local state |
+| `skills/` — Pi's skills | `~/.pi/web-search.json` (provider keys), `exa-usage.json` — machine-local state |
 | `prompts/` — prompt templates | — |
 
 > **Note:** `settings.json` is written by pi at runtime (`lastChangelogVersion`
@@ -179,7 +179,6 @@ binaries or secrets:
 | **Pi CLI** | Coding-agent runtime | pi.dev managed installer: `curl -fsSL https://pi.dev/install.sh \| sh` (review it first). It installs pinned dependencies under `~/.pi/agent/install/`, links `~/.local/bin/pi`, and updates with `pi update`. Don't also install it with `npm install -g`; nvm's bin directory precedes `~/.local/bin` on `PATH` and would shadow it |
 | **`just`, `git`** | activating this config and working with the repository | system install |
 | **Language servers** (pyright, typescript-language-server, rust-analyzer, gopls, …) | `pi-lens` LSP nav/diagnostics | install per-language as needed; pi-lens uses whatever is on `PATH`. ast-grep is bundled (no install) |
-| **Playwright CLI + Chromium** | The shared `playwright-cli` skill in `~/.agents/skills/` | `npm install -g @playwright/cli`, then `playwright-cli install-browser chromium`; see `docs/software.md` in my dotfiles repo |
 | **Provider credentials** | model access (Anthropic / OpenAI / Google) | `~/.pi/agent/auth.json` (run pi and log in; not tracked) |
 | **Search provider credentials** | `pi-web-access` web search, depending on provider | `~/.pi/web-search.json` / provider authentication (not tracked) |
 | **`CONTEXT7_API_KEY`** | Hosted Context7 authentication | exported environment variable referenced by `mcp.json`; never put the value in this repo |
@@ -217,9 +216,7 @@ third-party/community packages — add `@x.y.z` to a spec (e.g.
 `npm:pi-lens@1.2.3`).
 
 Context7 uses its hosted MCP endpoint, so there is no local Context7 package
-version to bump. Portable skills, including browser automation, Cloudflare
-tooling, and Railway, come from the shared `~/.agents/skills/` tree rather than
-being copied into Pi.
+version to bump.
 
 Inspect current live disk use instead of documenting a value that changes with
 package releases:
