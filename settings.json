@@ -15,10 +15,8 @@
   "packages": [
     "npm:pi-web-access",
     "npm:pi-lens",
-    "npm:pi-subagents",
     "npm:@ff-labs/pi-fff",
     "npm:pi-hermes-memory",
-    "npm:@quintinshaw/pi-dynamic-workflows",
     "npm:@juicesharp/rpiv-todo"
   ],
   "defaultProjectTrust": "ask",
