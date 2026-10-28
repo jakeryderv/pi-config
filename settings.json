@@ -1,11 +1,11 @@
 {
   "$schema": "https://pi.dev/schemas/settings.schema.json",
   "lastChangelogVersion": "1.4.0",
-  "theme": "carbonfox",
+  "theme": "system",
   "defaultProvider": "openai",
   "defaultModel": "gpt-6-astra",
   "defaultThinkingLevel": "high",
-  "quietStartup": true,
+  "quietStartup": "header",
   "terminal": {
     "showTerminalProgress": true
   },

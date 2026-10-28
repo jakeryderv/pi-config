@@ -19,7 +19,7 @@ local files beside the links.
 | `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `trust.json` — runtime state |
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
 | `extensions/` — custom TS extensions, Herdr integration, and development lockfile | `fff/`, `pi-hermes-memory/`, `projects-memory/`, `tmp/` — extension state |
-| `themes/` — custom TUI theme (`carbonfox.json`; selected in `settings.json`) | `~/.pi/artifacts/`, `web-search-cache/`, `rules/` — generated state |
+| `themes/` — custom TUI themes (currently none; Pi's built-in `system` theme follows the terminal palette) | `~/.pi/artifacts/`, `web-search-cache/`, `rules/` — generated state |
 | `skills/` — Pi-only skills; shared skills come from `~/.agents/skills/` | `~/.pi/web-search.json` (provider keys), `exa-usage.json` — machine-local state |
 | `prompts/` — prompt templates | — |
 
