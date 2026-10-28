@@ -16,7 +16,7 @@ local files beside the links.
 | `AGENTS.md` — global agent instructions; `AGENTS.override.md` — project-only additions that prevent this repo from loading the global instructions twice | `auth.json` — credentials |
 | `settings.json` — provider/model defaults, scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
 | `keybindings.json` — user keybinding overrides (currently none) | — |
-| `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `intercom/`, `trust.json` — runtime state |
+| `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `trust.json` — runtime state |
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
 | `extensions/` — custom TS extensions, Herdr integration, subagent display preferences, and development lockfile | `fff/`, `pi-hermes-memory/`, `projects-memory/`, `missions/`, `tmp/` — extension state |
 | `themes/` — custom TUI theme (`carbonfox.json`; selected in `settings.json`) | `~/.pi/artifacts/`, `workflows/`, `web-search-cache/`, `rules/` — generated state |
@@ -79,7 +79,7 @@ choose supported compact modes without replacing package execution:
   appear as codemode script rows.
 - Pi Lens collapses call and result rows into one summary line.
 - Subagents use a stable one-line inline summary; FleetView retains live details.
-- Intercom and Hermes Memory already provide compact package-owned summaries.
+- Hermes Memory already provides compact package-owned summaries.
 - Web access, FFF, and workflows retain richer semantic output where no supported
   global compact override exists.
 
@@ -137,7 +137,6 @@ Pi can also select them automatically when their descriptions match the task.
 | `@ff-labs/pi-fff` | Fast file/content search |
 | `pi-subagents` | Delegated agents and supervised execution |
 | `@quintinshaw/pi-dynamic-workflows` | Opt-in multi-agent workflows |
-| `pi-intercom` | Coordination between running Pi sessions |
 | `pi-hermes-memory` | Persistent memory and session search |
 | `pi-agent-browser-native` | Browser interaction and automation |
 | `@juicesharp/rpiv-todo` | Task tracking |
@@ -184,7 +183,7 @@ binaries or secrets:
 | **Browser dependencies** | Browser automation | follow the package's setup |
 | **Network** | Context7, AWS MCP, first-run proxy/model fetches, package installs, web search | — |
 
-Self-contained (no extra setup): `pi-subagents`, `pi-intercom`, `pi-web-access`
+Self-contained (no extra setup): `pi-subagents`, `pi-web-access`
 fetch, pi-lens's bundled ast-grep, and the two custom command extensions.
 
 ### AWS MCP setup

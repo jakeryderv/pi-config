@@ -16,7 +16,6 @@
     "npm:pi-web-access",
     "npm:pi-lens",
     "npm:pi-subagents",
-    "npm:pi-intercom",
     "npm:@ff-labs/pi-fff",
     "npm:pi-hermes-memory",
     "npm:@quintinshaw/pi-dynamic-workflows",
