@@ -139,6 +139,32 @@ test("JSON validation includes new configs and excludes ignored runtime files", 
   assert.match(failure.stderr, /invalid settings.json/);
 });
 
+test("settings clean filter strips per-installation IDs only", () => {
+  const settings = {
+    theme: "carbonfox",
+    markdown: { codeBlockIndent: "│ " },
+    deviceId: "00000000-0000-4000-8000-000000000000",
+    trackingId: "00000000-0000-4000-8000-000000000001",
+  };
+  const run = (input) =>
+    spawnSync(
+      process.execPath,
+      [join(repo, "scripts/strip-local-settings.mjs")],
+      { input, encoding: "utf8" },
+    );
+  const result = run(JSON.stringify(settings, null, 2));
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    result.stdout,
+    JSON.stringify(
+      { theme: "carbonfox", markdown: { codeBlockIndent: "│ " } },
+      null,
+      2,
+    ),
+  );
+  assert.equal(run("{broken").stdout, "{broken");
+});
+
 test("schema validation rejects settings Pi does not accept", (t) => {
   const directory = temporaryDirectory(t);
   mkdirSync(join(directory, "scripts"));

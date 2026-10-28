@@ -14,7 +14,7 @@ local files beside the links.
 | Tracked | Tool-managed / secret (stays in `~/.pi/`, NOT tracked) |
 | --- | --- |
 | `AGENTS.md` — global agent instructions; `AGENTS.override.md` — project-only additions that prevent this repo from loading the global instructions twice | `auth.json` — credentials |
-| `settings.json` — provider/model defaults, scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
+| `settings.json` — provider/model defaults (OpenAI via Sign in with ChatGPT), scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
 | `keybindings.json` — user keybinding overrides (currently none) | — |
 | `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `trust.json` — runtime state |
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
@@ -27,6 +27,14 @@ local files beside the links.
 > on updates, plus model/thinking/`enabledModels` changes from `/settings` and
 > the model picker), so it will show up dirty in `git status`. Commit when a
 > change is intentional; `git restore settings.json` to drop noise.
+>
+> Pi also writes per-installation identifiers into `settings.json` (`deviceId`
+> for Sign in with ChatGPT, `trackingId`). A git clean filter
+> (`.gitattributes` + `scripts/strip-local-settings.mjs`, configured by
+> `just setup`/`just apply`) strips them from what gets committed while the live
+> file keeps them, so each machine keeps its own IDs and none reach this public
+> repo. `just check` fails if a staged `settings.json` still contains them, which
+> catches a clone where `just git-filters` has not run yet.
 
 ## Activate
 

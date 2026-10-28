@@ -1,0 +1,3 @@
+# Strip per-installation identifiers Pi writes into settings.json.
+# Configured by `just setup` / `just apply` (see justfile `git-filters`).
+settings.json filter=pi-local-settings

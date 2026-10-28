@@ -2,7 +2,7 @@
   "$schema": "https://pi.dev/schemas/settings.schema.json",
   "lastChangelogVersion": "1.4.0",
   "theme": "carbonfox",
-  "defaultProvider": "openai-codex",
+  "defaultProvider": "openai",
   "defaultModel": "gpt-6-astra",
   "defaultThinkingLevel": "high",
   "quietStartup": true,
@@ -22,7 +22,7 @@
   "defaultProjectTrust": "ask",
   "enableInstallTelemetry": false,
   "enabledModels": [
-    "openai-codex/*:high"
+    "openai/gpt-6*:high"
   ],
   "hideThinkingBlock": true,
   "editorPaddingX": 1,

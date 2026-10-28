@@ -14,7 +14,7 @@ entries := "AGENTS.md settings.json keybindings.json mcp.json extensions skills 
 default: status
 
 # Link this repo's config into ~/.pi/agent/
-apply:
+apply: git-filters
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p "{{ agent_dir }}"
@@ -125,8 +125,17 @@ doctor:
     exit "$mismatch"
 
 # Install locked development dependencies (does not deploy live config)
-setup:
+setup: git-filters
     npm --prefix "{{ repo }}/extensions" ci --ignore-scripts
+
+# Configure the clean filter that keeps Pi's per-installation IDs out of commits
+git-filters:
+    git -C "{{ repo }}" config filter.pi-local-settings.clean "node scripts/strip-local-settings.mjs"
+    git -C "{{ repo }}" config filter.pi-local-settings.required true
+
+# Fail if the staged settings.json still carries per-installation IDs
+check-local-settings:
+    git -C "{{ repo }}" show :settings.json | node -e 'const s=JSON.parse(require("fs").readFileSync(0,"utf8")); const found=["deviceId","trackingId"].filter(k=>k in s); if (found.length) { console.error(`staged settings.json contains ${found.join(", ")}; run just git-filters, then git add settings.json`); process.exit(1) } console.log("ok      staged settings.json has no per-installation IDs")'
 
 # Validate tracked and new, non-ignored JSON files
 check-json:
@@ -142,6 +151,6 @@ test:
     node --test "{{ repo }}/scripts/config.test.mjs"
 
 # Credential-free checks shared with CI
-check: check-json check-schemas
+check: check-json check-schemas check-local-settings
     npm --prefix "{{ repo }}/extensions" run check
     just --justfile "{{ repo }}/justfile" test
