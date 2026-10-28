@@ -9,6 +9,3 @@ auth.json
 *.key
 
 node_modules/
-
-# Background task metadata/output, not project Pi configuration.
-.pi/tasks/

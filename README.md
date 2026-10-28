@@ -50,9 +50,9 @@ so new files created in the repo — or from the live side under
 `~/.pi/agent/extensions/` etc. — appear in both places immediately. `pi-lens.json`
 is linked separately to `~/.pi-lens/config.json`; Pi Lens keeps its generated
 state beside that link. Anything pi-side tools drop into the linked directories
-lands in the repo working tree; `.gitignore` is the filter. Background-task
-artifacts under `.pi/tasks/` and common local credential files are ignored;
-project `.pi/` configuration and `.env.example` files remain trackable. Ignore
+lands in the repo working tree; `.gitignore` is the filter. Common local
+credential files are ignored; project `.pi/` configuration and `.env.example`
+files remain trackable. Ignore
 rules are a safety net, not secret scanning: review changes before committing.
 
 Fresh-machine order: install Node 24 + git + just → install the Pi CLI with the
