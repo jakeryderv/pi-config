@@ -101,7 +101,7 @@ broken links and links to the wrong file inside this repo. `doctor` also checks
 `node`, `npm`, `git`, `pi`, configured local MCP launchers (currently `uvx`), and
 the three Pi development dependency versions. A missing launcher fails only for
 enabled servers; for servers disabled by default it warns. It does not authenticate, connect
-to MCP servers, or validate optional language/browser/audio tooling.
+to MCP servers, or validate optional language/browser tooling.
 
 GitHub Actions runs `just setup` and `just check` on pushes and pull requests,
 using Node 24. Deployment tests use temporary home directories, not live config.
@@ -137,14 +137,10 @@ Pi can also select them automatically when their descriptions match the task.
 | `@ff-labs/pi-fff` | Fast file/content search |
 | `pi-subagents` | Delegated agents and supervised execution |
 | `@quintinshaw/pi-dynamic-workflows` | Opt-in multi-agent workflows |
-| `pi-background-tasks` | Background commands, read-only delegates, and Fusion tasks |
 | `pi-intercom` | Coordination between running Pi sessions |
 | `pi-hermes-memory` | Persistent memory and session search |
 | `pi-agent-browser-native` | Browser interaction and automation |
-| `@juicesharp/rpiv-voice` | Local speech-to-text prompt dictation |
-| `@juicesharp/rpiv-ask-user-question` | Structured user questions |
 | `@juicesharp/rpiv-todo` | Task tracking |
-| `ayghri/i-have-adhd` | Toggleable response-style guidance |
 
 Delegation packages overlap in capability but serve different execution models.
 They are intentionally retained; no package selection is changed by the
@@ -185,7 +181,7 @@ binaries or secrets:
 | **`CONTEXT7_API_KEY`** | Hosted Context7 authentication | exported environment variable referenced by `mcp.json`; never put the value in this repo |
 | **`uv` / `uvx`** | Launching `mcp-proxy-for-aws@latest` | install [uv](https://docs.astral.sh/uv/getting-started/installation/); `uvx` resolves the proxy on demand |
 | **AWS credentials, CLI, and permissions** | AWS MCP access and local credential management | working `default` AWS profile; see below |
-| **Browser/audio dependencies** | Browser automation and voice dictation | follow each package's setup; voice downloads a local speech model on first use |
+| **Browser dependencies** | Browser automation | follow the package's setup |
 | **Network** | Context7, AWS MCP, first-run proxy/model fetches, package installs, web search | — |
 
 Self-contained (no extra setup): `pi-subagents`, `pi-intercom`, `pi-web-access`
