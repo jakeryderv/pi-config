@@ -86,8 +86,14 @@ Development:
 
 ```bash
 just setup    # install locked development dependencies; no live deployment
-just check    # JSON validation + tsc --noEmit + extension/deployment tests
+just check    # JSON + Pi schema validation, tsc --noEmit, extension/deployment tests
 ```
+
+`check-schemas` validates `settings.json`, `keybindings.json`, and `themes/*.json`
+against the schemas shipped with the pinned development copy of Pi
+(`extensions/node_modules/@earendil-works/pi-coding-agent/schemas/`), so it runs
+offline and tracks whichever Pi version the dev pins name. The tracked files
+also carry `$schema` references to `https://pi.dev/schemas/` for editor completion.
 
 `just status` and `just doctor` return nonzero for deployment problems, including
 broken links and links to the wrong file inside this repo. `doctor` also checks
@@ -197,7 +203,8 @@ recorded in `extensions/UI-SURFACES.md`. After upgrading Pi or installed package
    version and refresh `extensions/package-lock.json` and
    `extensions/node_modules/`. Exact development pins do not pin the runtime
    feature packages in `settings.json`.
-2. Run `just check`.
+2. Run `just check`. Schema failures after a bump mean a tracked setting or
+   theme field changed upstream; check the Pi changelog.
 3. In a TUI session, verify native prompt/autocomplete, footer/status placement,
    streaming, built-in tool expansion, `/copy-all`, and `/dump-system-prompt`.
 

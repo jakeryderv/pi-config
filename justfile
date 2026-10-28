@@ -129,12 +129,16 @@ setup:
 check-json:
     node "{{ repo }}/scripts/check-json.mjs"
 
+# Validate tracked config against the pinned Pi version's published schemas
+check-schemas:
+    node "{{ repo }}/scripts/check-schemas.mjs"
+
 # Run extension and isolated deployment regression tests
 test:
     npm --prefix "{{ repo }}/extensions" test
     node --test "{{ repo }}/scripts/config.test.mjs"
 
 # Credential-free checks shared with CI
-check: check-json
+check: check-json check-schemas
     npm --prefix "{{ repo }}/extensions" run check
     just --justfile "{{ repo }}/justfile" test

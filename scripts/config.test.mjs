@@ -138,3 +138,39 @@ test("JSON validation includes new configs and excludes ignored runtime files", 
   assert.equal(failure.status, 1);
   assert.match(failure.stderr, /invalid settings.json/);
 });
+
+test("schema validation rejects settings Pi does not accept", (t) => {
+  const directory = temporaryDirectory(t);
+  mkdirSync(join(directory, "scripts"));
+  mkdirSync(join(directory, "extensions"));
+  mkdirSync(join(directory, "themes"));
+  copyFileSync(
+    join(repo, "scripts/check-schemas.mjs"),
+    join(directory, "scripts/check-schemas.mjs"),
+  );
+  copyFileSync(
+    join(repo, "extensions/package.json"),
+    join(directory, "extensions/package.json"),
+  );
+  symlinkSync(
+    join(repo, "extensions/node_modules"),
+    join(directory, "extensions/node_modules"),
+  );
+  writeFileSync(join(directory, "keybindings.json"), "{}");
+  const validate = () =>
+    spawnSync(process.execPath, [join(directory, "scripts/check-schemas.mjs")], {
+      encoding: "utf8",
+    });
+  writeFileSync(
+    join(directory, "settings.json"),
+    JSON.stringify({ tuiMode: "fullscreen" }),
+  );
+  assert.equal(validate().status, 0, validate().stderr);
+  writeFileSync(
+    join(directory, "settings.json"),
+    JSON.stringify({ tuiMode: "sideways" }),
+  );
+  const failure = validate();
+  assert.equal(failure.status, 1);
+  assert.match(failure.stderr, /invalid settings.json\/tuiMode/);
+});

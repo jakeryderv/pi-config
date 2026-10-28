@@ -1,4 +1,5 @@
 {
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
   "lastChangelogVersion": "1.4.0",
   "theme": "carbonfox",
   "defaultProvider": "openai-codex",
@@ -9,7 +10,7 @@
     "showTerminalProgress": true
   },
   "markdown": {
-    "codeBlockIndent": "│ "
+    "codeBlockIndent": "\u2502 "
   },
   "packages": [
     "npm:pi-web-access",
@@ -34,10 +35,7 @@
   ],
   "hideThinkingBlock": true,
   "editorPaddingX": 1,
-  "outputPad": 1,
   "autocompleteMaxVisible": 6,
-  "tuiMode": "fullscreen",
-  "fullscreenScrollbar": "auto",
   "fullscreenExitOutput": "resume-hint",
   "extensions": [
     "-builtin:mcp"
