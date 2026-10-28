@@ -14,7 +14,7 @@ local files beside the links.
 | Tracked | Tool-managed / secret (stays in `~/.pi/`, NOT tracked) |
 | --- | --- |
 | `AGENTS.md` — global agent instructions; `AGENTS.override.md` — project-only additions that prevent this repo from loading the global instructions twice | `auth.json` — credentials |
-| `settings.json` — provider/model defaults (OpenAI via Sign in with ChatGPT), scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
+| `settings.json` — provider/model defaults (OpenAI via Sign in with ChatGPT), scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json`; `install/`, `bin/` — the managed Pi installation |
 | `keybindings.json` — user keybinding overrides (currently none) | — |
 | `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `trust.json` — runtime state |
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
@@ -55,7 +55,8 @@ artifacts under `.pi/tasks/` and common local credential files are ignored;
 project `.pi/` configuration and `.env.example` files remain trackable. Ignore
 rules are a safety net, not secret scanning: review changes before committing.
 
-Fresh-machine order: install Node 24 + git + just → install the Pi CLI → clone
+Fresh-machine order: install Node 24 + git + just → install the Pi CLI with the
+pi.dev installer → clone
 this repo → `just apply` → run Pi (it installs the tracked `packages` and
 prompts for provider login) → add optional external dependencies as needed
 (language servers, Chromium, Exa key).
@@ -175,7 +176,7 @@ binaries or secrets:
 | Dependency | Needed for | How it's resolved |
 | --- | --- | --- |
 | **Node.js 24 + npm/npx** | Pi itself, packages, TypeScript tests | system install; CI uses Node 24 |
-| **Pi CLI** | Coding-agent runtime | `tools/install-pi.sh` in my dotfiles repo (tracks the latest release), or install `@earendil-works/pi-coding-agent` directly |
+| **Pi CLI** | Coding-agent runtime | pi.dev managed installer: `curl -fsSL https://pi.dev/install.sh \| sh` (review it first). It installs pinned dependencies under `~/.pi/agent/install/`, links `~/.local/bin/pi`, and updates with `pi update`. Don't also install it with `npm install -g`; nvm's bin directory precedes `~/.local/bin` on `PATH` and would shadow it |
 | **`just`, `git`** | activating this config and working with the repository | system install |
 | **Language servers** (pyright, typescript-language-server, rust-analyzer, gopls, …) | `pi-lens` LSP nav/diagnostics | install per-language as needed; pi-lens uses whatever is on `PATH`. ast-grep is bundled (no install) |
 | **Playwright CLI + Chromium** | Shared browser automation skill | see `agent-skills` in my dotfiles repo |
