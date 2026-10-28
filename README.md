@@ -16,7 +16,7 @@ local files beside the links.
 | `AGENTS.md` — global agent instructions; `AGENTS.override.md` — project-only additions that prevent this repo from loading the global instructions twice | `auth.json` — credentials |
 | `settings.json` — provider/model defaults (OpenAI via Sign in with ChatGPT), scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json`; `install/`, `bin/` — the managed Pi installation |
 | `keybindings.json` — user keybinding overrides (currently none) | — |
-| `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `trust.json` — runtime state |
+| `mcp.json` — Pi's built-in MCP servers: hosted Context7 | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `trust.json` — runtime state |
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
 | `extensions/` — custom TS extensions, Herdr integration, and development lockfile | `fff/`, `pi-hermes-memory/`, `projects-memory/`, `tmp/` — extension state |
 | `themes/` — custom TUI themes (currently none; Pi's built-in `system` theme follows the terminal palette) | `~/.pi/artifacts/`, `web-search-cache/`, `rules/` — generated state |
@@ -106,14 +106,14 @@ also carry `$schema` references to `https://pi.dev/schemas/` for editor completi
 
 `just status` and `just doctor` return nonzero for deployment problems, including
 broken links and links to the wrong file inside this repo. `doctor` also checks
-`node`, `npm`, `git`, `pi`, configured local MCP launchers (currently `uvx`), and
+`node`, `npm`, `git`, `pi`, configured local MCP launchers (currently none), and
 the three Pi development dependency versions. A missing launcher fails only for
 enabled servers; for servers disabled by default it warns. It does not authenticate, connect
 to MCP servers, or validate optional language/browser tooling.
 
 GitHub Actions runs `just setup` and `just check` on pushes and pull requests,
 using Node 24. Deployment tests use temporary home directories, not live config.
-CI needs no Pi login, AWS credentials, or globally installed Pi CLI.
+CI needs no Pi login or globally installed Pi CLI.
 
 ## Standalone skills
 
@@ -163,7 +163,7 @@ Pi connects every *enabled* server in the background at session start, so
 servers that are only occasionally useful stay `"enabled": false` globally and
 are enabled where needed: `/mcp` → the server → "Enable in this project" in a
 trusted project, or a `.pi/mcp.json` override such as
-`{ "mcpServers": { "aws-mcp": { "enabled": true } } }`.
+`{ "mcpServers": { "<name>": { "enabled": true } } }`.
 
 `pi mcp list` connects to the enabled servers and reports their tools; `/mcp`
 inspects, reconnects, signs in, and changes exposure inside a session.
@@ -183,30 +183,10 @@ binaries or secrets:
 | **Provider credentials** | model access (Anthropic / OpenAI / Google) | `~/.pi/agent/auth.json` (run pi and log in; not tracked) |
 | **Search provider credentials** | `pi-web-access` web search, depending on provider | `~/.pi/web-search.json` / provider authentication (not tracked) |
 | **`CONTEXT7_API_KEY`** | Hosted Context7 authentication | exported environment variable referenced by `mcp.json`; never put the value in this repo |
-| **`uv` / `uvx`** | Launching `mcp-proxy-for-aws@latest` | install [uv](https://docs.astral.sh/uv/getting-started/installation/); `uvx` resolves the proxy on demand |
-| **AWS credentials, CLI, and permissions** | AWS MCP access and local credential management | working `default` AWS profile; see below |
-| **Network** | Context7, AWS MCP, first-run proxy/model fetches, package installs, web search | — |
+| **Network** | Context7, first-run model fetches, package installs, web search | — |
 
 Self-contained (no extra setup): `pi-web-access` fetch, pi-lens's bundled
 ast-grep, and the two custom command extensions.
-
-### AWS MCP setup
-
-The AWS server in `mcp.json` launches `uvx mcp-proxy-for-aws@latest` against
-`https://aws-mcp.us-east-1.api.aws/mcp`. It is disabled globally so sessions
-without AWS work do not start the proxy or report a failed AWS sign-in; enable it
-per project as described under [MCP](#mcp).
-
-- Install `uv` (provides `uvx`) and AWS CLI v2 for local authentication management.
-- Provide valid short-lived credentials for the `default` profile using your
-  existing AWS login or IAM Identity Center workflow. The proxy is explicitly
-  configured with `AWS_MCP_PROXY_PROFILES=default`; changing only `AWS_PROFILE`
-  is not a replacement for updating that setting.
-- The profile's identity needs permission to use AWS MCP and any underlying AWS
-  operations it invokes. Prefer least-privilege access, especially for mutations.
-- Keep AWS config/credentials and cached login tokens under `~/.aws/`, outside
-  this repository. Validate authentication and MCP connectivity separately when
-  using AWS tools; `just doctor` deliberately performs no cloud calls.
 
 ## Maintenance
 

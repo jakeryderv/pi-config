@@ -6,20 +6,6 @@
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       },
       "description": "Current documentation and code examples for libraries, frameworks, SDKs, and CLIs"
-    },
-    "aws-mcp": {
-      "command": "uvx",
-      "args": [
-        "mcp-proxy-for-aws@latest",
-        "https://aws-mcp.us-east-1.api.aws/mcp",
-        "--metadata",
-        "INSTALL_SOURCE=aws-cli"
-      ],
-      "env": {
-        "AWS_MCP_PROXY_PROFILES": "default"
-      },
-      "description": "AWS documentation, APIs, and account operations through the default AWS profile",
-      "enabled": false
     }
   }
 }

@@ -93,11 +93,11 @@ test("doctor propagates deployment failures", (t) => {
   assert.match(result.stdout, /absent\s+settings.json/);
 });
 
-test("doctor reports missing core and configured MCP executables", (t) => {
+test("doctor reports missing core executables", (t) => {
   const { home } = deployment(t);
   const bin = join(home, "bin");
   mkdirSync(bin);
-  // Only expose the tools needed to run the checks. No npm, pi, or uvx.
+  // Only expose the tools needed to run the checks. No npm or pi.
   for (const command of ["bash", "sh", "just", "node", "git", "readlink"]) {
     const found = spawnSync(
       "bash",
@@ -111,7 +111,6 @@ test("doctor reports missing core and configured MCP executables", (t) => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /missing executable npm/);
   assert.match(result.stderr, /missing executable pi/);
-  assert.match(result.stderr, /missing MCP executable uvx/);
 });
 
 test("JSON validation includes new configs and excludes ignored runtime files", (t) => {
