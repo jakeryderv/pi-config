@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "1.4.0",
   "theme": "carbonfox",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6-astra",
@@ -38,5 +38,8 @@
   "autocompleteMaxVisible": 6,
   "tuiMode": "fullscreen",
   "fullscreenScrollbar": "auto",
-  "fullscreenExitOutput": "resume-hint"
+  "fullscreenExitOutput": "resume-hint",
+  "extensions": [
+    "-builtin:mcp"
+  ]
 }
