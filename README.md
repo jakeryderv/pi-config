@@ -179,7 +179,7 @@ binaries or secrets:
 | **Pi CLI** | Coding-agent runtime | pi.dev managed installer: `curl -fsSL https://pi.dev/install.sh \| sh` (review it first). It installs pinned dependencies under `~/.pi/agent/install/`, links `~/.local/bin/pi`, and updates with `pi update`. Don't also install it with `npm install -g`; nvm's bin directory precedes `~/.local/bin` on `PATH` and would shadow it |
 | **`just`, `git`** | activating this config and working with the repository | system install |
 | **Language servers** (pyright, typescript-language-server, rust-analyzer, gopls, …) | `pi-lens` LSP nav/diagnostics | install per-language as needed; pi-lens uses whatever is on `PATH`. ast-grep is bundled (no install) |
-| **Playwright CLI + Chromium** | Shared browser automation skill | see `agent-skills` in my dotfiles repo |
+| **Playwright CLI + Chromium** | The shared `playwright-cli` skill in `~/.agents/skills/` | `npm install -g @playwright/cli`, then `playwright-cli install-browser chromium`; see `docs/software.md` in my dotfiles repo |
 | **Provider credentials** | model access (Anthropic / OpenAI / Google) | `~/.pi/agent/auth.json` (run pi and log in; not tracked) |
 | **Search provider credentials** | `pi-web-access` web search, depending on provider | `~/.pi/web-search.json` / provider authentication (not tracked) |
 | **`CONTEXT7_API_KEY`** | Hosted Context7 authentication | exported environment variable referenced by `mcp.json`; never put the value in this repo |
