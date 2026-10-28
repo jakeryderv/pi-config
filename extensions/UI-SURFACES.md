@@ -12,5 +12,5 @@ Repository-owned extensions do not replace Pi's editor, autocomplete, footer, st
 These are supported Pi configuration rather than extension-owned replacements:
 
 - `themes/carbonfox.json` owns the color palette.
-- `settings.json` selects fullscreen mode, editor/output padding, autocomplete height, scrollbar behavior, and the Markdown code-block rail.
-- `mcp.json`, `pi-lens.json`, and `subagent/config.json` select package-supported compact render modes.
+- `settings.json` selects editor padding, autocomplete height, fullscreen exit output, and the Markdown code-block rail; fullscreen mode, output padding, and the scrollbar use Pi's defaults.
+- `pi-lens.json` and `subagent/config.json` select package-supported compact render modes. MCP uses Pi's built-in rendering.

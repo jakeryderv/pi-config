@@ -10,11 +10,10 @@
     "showTerminalProgress": true
   },
   "markdown": {
-    "codeBlockIndent": "\u2502 "
+    "codeBlockIndent": "│ "
   },
   "packages": [
     "npm:pi-web-access",
-    "npm:pi-mcp-adapter",
     "npm:pi-lens",
     "npm:pi-subagents",
     "npm:pi-intercom",
@@ -36,8 +35,5 @@
   "hideThinkingBlock": true,
   "editorPaddingX": 1,
   "autocompleteMaxVisible": 6,
-  "fullscreenExitOutput": "resume-hint",
-  "extensions": [
-    "-builtin:mcp"
-  ]
+  "fullscreenExitOutput": "resume-hint"
 }

@@ -16,7 +16,7 @@ local files beside the links.
 | `AGENTS.md` — global agent instructions; `AGENTS.override.md` — project-only additions that prevent this repo from loading the global instructions twice | `auth.json` — credentials |
 | `settings.json` — provider/model defaults, scoped model cycling, installed `packages` | `npm/`, `git/` — Pi's package installations, regenerated from `settings.json` |
 | `keybindings.json` — user keybinding overrides (currently none) | — |
-| `mcp.json` — hosted Context7 and AWS MCP (via local proxy), plus compact MCP result rendering | `sessions/`, `mcp-cache.json`, `models-store.json`, `run-history.jsonl`, `intercom/`, `trust.json` — runtime state |
+| `mcp.json` — Pi's built-in MCP servers: hosted Context7, and AWS MCP via a local proxy (disabled by default) | `sessions/`, `mcp-auth.json`, `mcp.log`, `models-store.json`, `run-history.jsonl`, `intercom/`, `trust.json` — runtime state |
 | `pi-lens.json` — tracked Pi Lens preferences, linked to `~/.pi-lens/config.json` | the rest of `~/.pi-lens/` — logs, caches, downloaded binaries, and other extension state |
 | `extensions/` — custom TS extensions, Herdr integration, subagent display preferences, and development lockfile | `fff/`, `pi-hermes-memory/`, `projects-memory/`, `missions/`, `tmp/` — extension state |
 | `themes/` — custom TUI theme (`carbonfox.json`; selected in `settings.json`) | `~/.pi/artifacts/`, `workflows/`, `web-search-cache/`, `rules/` — generated state |
@@ -75,7 +75,8 @@ exists only to make local type-checking and tests reproducible.
 Third-party tools use their package-owned renderers. The tracked preferences
 choose supported compact modes without replacing package execution:
 
-- MCP uses compact self-rendered results with one collapsed result line.
+- MCP uses Pi's built-in rendering; with the default `codemode` exposure, calls
+  appear as codemode script rows.
 - Pi Lens collapses call and result rows into one summary line.
 - Subagents use a stable one-line inline summary; FleetView retains live details.
 - Intercom and Hermes Memory already provide compact package-owned summaries.
@@ -98,7 +99,8 @@ also carry `$schema` references to `https://pi.dev/schemas/` for editor completi
 `just status` and `just doctor` return nonzero for deployment problems, including
 broken links and links to the wrong file inside this repo. `doctor` also checks
 `node`, `npm`, `git`, `pi`, configured local MCP launchers (currently `uvx`), and
-the three Pi development dependency versions. It does not authenticate, connect
+the three Pi development dependency versions. A missing launcher fails only for
+enabled servers; for servers disabled by default it warns. It does not authenticate, connect
 to MCP servers, or validate optional language/browser/audio tooling.
 
 GitHub Actions runs `just setup` and `just check` on pushes and pull requests,
@@ -131,7 +133,6 @@ Pi can also select them automatically when their descriptions match the task.
 | Package | Responsibility |
 | --- | --- |
 | `pi-web-access` | Web search and content extraction |
-| `pi-mcp-adapter` | On-demand MCP discovery and calls |
 | `pi-lens` | Code intelligence, diagnostics, and structural checks |
 | `@ff-labs/pi-fff` | Fast file/content search |
 | `pi-subagents` | Delegated agents and supervised execution |
@@ -148,6 +149,24 @@ Pi can also select them automatically when their descriptions match the task.
 Delegation packages overlap in capability but serve different execution models.
 They are intentionally retained; no package selection is changed by the
 repository checks.
+
+## MCP
+
+MCP uses Pi's built-in support (added in Pi 0.99), configured by `mcp.json`. It
+replaced `pi-mcp-adapter`; reinstalling that package would take over `/mcp` and
+`mcp.json` again. Servers use the default `codemode` exposure: their tools are
+not declared to the model, which reaches them from `codemode` scripts, and Pi
+turns `codemode` on when such a server connects. Each server's `description`
+lists it in the system prompt before it connects.
+
+Pi connects every *enabled* server in the background at session start, so
+servers that are only occasionally useful stay `"enabled": false` globally and
+are enabled where needed: `/mcp` → the server → "Enable in this project" in a
+trusted project, or a `.pi/mcp.json` override such as
+`{ "mcpServers": { "aws-mcp": { "enabled": true } } }`.
+
+`pi mcp list` connects to the enabled servers and reports their tools; `/mcp`
+inspects, reconnects, signs in, and changes exposure inside a session.
 
 ## Dependencies
 
@@ -175,8 +194,9 @@ fetch, pi-lens's bundled ast-grep, and the two custom command extensions.
 ### AWS MCP setup
 
 The AWS server in `mcp.json` launches `uvx mcp-proxy-for-aws@latest` against
-`https://aws-mcp.us-east-1.api.aws/mcp`. Both MCP servers are lazy: opening Pi
-does not itself connect them.
+`https://aws-mcp.us-east-1.api.aws/mcp`. It is disabled globally so sessions
+without AWS work do not start the proxy or report a failed AWS sign-in; enable it
+per project as described under [MCP](#mcp).
 
 - Install `uv` (provides `uvx`) and AWS CLI v2 for local authentication management.
 - Provide valid short-lived credentials for the `default` profile using your

@@ -94,14 +94,17 @@ doctor:
     command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || exit 1
     just --justfile "{{ repo }}/justfile" check-json || exit 1
     # Check configured local MCP launchers without starting servers or reading credentials.
-    while IFS= read -r command; do
+    # Disabled servers can be enabled per project, so a missing launcher only warns.
+    while read -r command enabled; do
         if command -v "$command" >/dev/null 2>&1; then
             echo "ok      MCP executable $command"
-        else
+        elif [ "$enabled" = true ]; then
             echo "missing MCP executable $command (see README dependencies)" >&2
             mismatch=1
+        else
+            echo "missing MCP executable $command (server disabled by default; see README dependencies)" >&2
         fi
-    done < <(node -e 'const c=require(process.argv[1]); for (const s of Object.values(c.mcpServers ?? {})) if (s.disabled !== true && typeof s.command === "string") console.log(s.command)' "{{ repo }}/mcp.json")
+    done < <(node -e 'const c=require(process.argv[1]); for (const s of Object.values(c.mcpServers ?? {})) if (typeof s.command === "string") console.log(s.command, s.enabled !== false)' "{{ repo }}/mcp.json")
     command -v pi >/dev/null 2>&1 || exit 1
     runtime_version="$(pi --version)"
     for package in pi-ai pi-coding-agent pi-tui; do

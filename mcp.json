@@ -1,17 +1,11 @@
 {
-  "settings": {
-    "toolPrefix": "server",
-    "idleTimeout": 10,
-    "toolResultRendering": "compact",
-    "collapsedResultLines": 1
-  },
   "mcpServers": {
     "context7": {
       "url": "https://mcp.context7.com/mcp",
       "headers": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       },
-      "lifecycle": "lazy"
+      "description": "Current documentation and code examples for libraries, frameworks, SDKs, and CLIs"
     },
     "aws-mcp": {
       "command": "uvx",
@@ -24,7 +18,8 @@
       "env": {
         "AWS_MCP_PROXY_PROFILES": "default"
       },
-      "lifecycle": "lazy"
+      "description": "AWS documentation, APIs, and account operations through the default AWS profile",
+      "enabled": false
     }
   }
 }
