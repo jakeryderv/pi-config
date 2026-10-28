@@ -19,7 +19,6 @@
     "npm:@ff-labs/pi-fff",
     "npm:pi-hermes-memory",
     "npm:@quintinshaw/pi-dynamic-workflows",
-    "npm:pi-agent-browser-native",
     "npm:@juicesharp/rpiv-todo"
   ],
   "defaultProjectTrust": "ask",

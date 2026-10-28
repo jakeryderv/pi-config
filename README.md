@@ -138,7 +138,6 @@ Pi can also select them automatically when their descriptions match the task.
 | `pi-subagents` | Delegated agents and supervised execution |
 | `@quintinshaw/pi-dynamic-workflows` | Opt-in multi-agent workflows |
 | `pi-hermes-memory` | Persistent memory and session search |
-| `pi-agent-browser-native` | Browser interaction and automation |
 | `@juicesharp/rpiv-todo` | Task tracking |
 
 Delegation packages overlap in capability but serve different execution models.
@@ -180,7 +179,6 @@ binaries or secrets:
 | **`CONTEXT7_API_KEY`** | Hosted Context7 authentication | exported environment variable referenced by `mcp.json`; never put the value in this repo |
 | **`uv` / `uvx`** | Launching `mcp-proxy-for-aws@latest` | install [uv](https://docs.astral.sh/uv/getting-started/installation/); `uvx` resolves the proxy on demand |
 | **AWS credentials, CLI, and permissions** | AWS MCP access and local credential management | working `default` AWS profile; see below |
-| **Browser dependencies** | Browser automation | follow the package's setup |
 | **Network** | Context7, AWS MCP, first-run proxy/model fetches, package installs, web search | — |
 
 Self-contained (no extra setup): `pi-subagents`, `pi-web-access`
